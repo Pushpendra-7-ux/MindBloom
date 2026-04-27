@@ -1,0 +1,41 @@
+# === OS Generated ===
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# === IDE ===
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+
+# === Backend (Node.js) ===
+backend/node_modules/
+backend/.env
+
+# === Flutter / Dart ===
+mindbloom_app/.dart_tool/
+mindbloom_app/.flutter-plugins-dependencies
+mindbloom_app/.pub-cache/
+mindbloom_app/.pub/
+mindbloom_app/build/
+mindbloom_app/coverage/
+mindbloom_app/**/doc/api/
+mindbloom_app/**/ios/Flutter/.last_build_id
+mindbloom_app/android/app/debug/
+mindbloom_app/android/app/profile/
+mindbloom_app/android/app/release/
+mindbloom_app/.metadata
+mindbloom_app/*.iml
+
+# Symbolication & Obfuscation
+app.*.symbols
+app.*.map.json
+
+# Logs
+*.log
+npm-debug.log*
