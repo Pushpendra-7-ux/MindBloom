@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../config/theme.dart';
+import '../../config/daily_quotes.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/mood_provider.dart';
 import '../../widgets/custom_card.dart';
@@ -265,6 +266,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildGreetingCard(BuildContext context, String name) {
+    final dailyQuote = DailyQuotes.getTodayQuote();
+
     return CustomCard(
       gradient: LinearGradient(
         colors: [
@@ -294,10 +297,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            '"Every day is a new opportunity to bloom."',
+            '"${dailyQuote['text']}"',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.7),
               fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '— ${dailyQuote['author']}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 11,
             ),
           ),
         ],
