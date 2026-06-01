@@ -15,6 +15,7 @@ class AppColors {
   static const Color border = Color(0x14000000); // rgba(0,0,0,0.08)
   static const Color error = Color(0xFFE53935);
   static const Color success = Color(0xFF43A047);
+  static const Color lavender = Color(0xFFB8A9E8);
 
   // Dark theme colors
   static const Color darkBackground = Color(0xFF1A1A2E);
@@ -53,6 +54,12 @@ class AppColors {
     colors: [Color(0xFFE53935), Color(0xFFFF5252)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient nightGradient = LinearGradient(
+    colors: [Color(0xFF1A1A2E), Color(0xFF16213E), Color(0xFF0F3460)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
   );
 }
 
@@ -155,6 +162,23 @@ class AppTheme {
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
+    chipTheme: ChipThemeData(
+      backgroundColor: AppColors.primaryPurple.withValues(alpha: 0.1),
+      selectedColor: AppColors.primaryPurple,
+      labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w400),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      side: BorderSide.none,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.cardWhite,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      titleTextStyle: GoogleFonts.inter(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      ),
+    ),
   );
 
   static ThemeData darkTheme = ThemeData(
@@ -250,6 +274,23 @@ class AppTheme {
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: AppColors.primaryPurple.withValues(alpha: 0.15),
+      selectedColor: AppColors.primaryPurple,
+      labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w400, color: AppColors.darkTextPrimary),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      side: BorderSide.none,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.darkCard,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      titleTextStyle: GoogleFonts.inter(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: AppColors.darkTextPrimary,
+      ),
     ),
   );
 }
