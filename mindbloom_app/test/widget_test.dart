@@ -1,9 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindbloom_app/main.dart';
 
 void main() {
   testWidgets('App launches smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const MindBloomApp());
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MindBloomApp(),
+      ),
+    );
+    await tester.pump();
   });
 }
