@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
 import '../../config/daily_quotes.dart';
 import '../../providers/auth_provider.dart';
@@ -16,13 +17,45 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  bool _isQuoteFavorited = false;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       ref.read(moodProvider.notifier).fetchLatestMood();
       ref.read(moodProvider.notifier).fetchWeeklyData();
+      _checkIfQuoteFavorited();
     });
+  }
+
+  Future<void> _checkIfQuoteFavorited() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoritedList = prefs.getStringList('favorited_quotes') ?? [];
+    final dailyQuote = DailyQuotes.getTodayQuote();
+    final quoteKey = '${dailyQuote['text']}~${dailyQuote['author']}';
+    if (mounted) {
+      setState(() {
+        _isQuoteFavorited = favoritedList.contains(quoteKey);
+      });
+    }
+  }
+
+  Future<void> _toggleFavoriteQuote() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoritedList = prefs.getStringList('favorited_quotes') ?? [];
+    final dailyQuote = DailyQuotes.getTodayQuote();
+    final quoteKey = '${dailyQuote['text']}~${dailyQuote['author']}';
+    
+    if (favoritedList.contains(quoteKey)) {
+      favoritedList.remove(quoteKey);
+      setState(() => _isQuoteFavorited = false);
+    } else {
+      favoritedList.add(quoteKey);
+      setState(() => _isQuoteFavorited = true);
+    }
+    
+    await prefs.setStringList('favorited_quotes', favoritedList);
   }
 
   String _getGreeting() {
@@ -281,19 +314,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${_getGreeting()} ☀️',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: 0.85),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            name,
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_getGreeting()} ☀️',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      name,
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(
+                  _isQuoteFavorited ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+                onPressed: _toggleFavoriteQuote,
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Text(
