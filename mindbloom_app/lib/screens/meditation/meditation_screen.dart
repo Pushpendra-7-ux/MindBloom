@@ -17,6 +17,8 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _ambientPlayer = AudioPlayer();
+  double _ambientVolume = 0.5;
 
   final List<Map<String, dynamic>> _sessions = [
     {'title': 'Calm Morning', 'duration': '10 min', 'icon': '🌅', 'color': AppColors.warmAmber, 'seconds': 600, 'path': 'assets/audio/calm.wav'},
@@ -28,12 +30,12 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
   ];
 
   final List<Map<String, dynamic>> _ambientSounds = [
-    {'title': 'Rain', 'icon': '🌧️'},
-    {'title': 'Ocean', 'icon': '🌊'},
-    {'title': 'Forest', 'icon': '🌿'},
-    {'title': 'Birds', 'icon': '🐦'},
-    {'title': 'Wind', 'icon': '💨'},
-    {'title': 'Fire', 'icon': '🔥'},
+    {'title': 'Rain', 'icon': '🌧️', 'path': 'assets/audio/rain.wav'},
+    {'title': 'Ocean', 'icon': '🌊', 'path': 'assets/audio/ocean.wav'},
+    {'title': 'Forest', 'icon': '🌿', 'path': 'assets/audio/forest.wav'},
+    {'title': 'Birds', 'icon': '🐦', 'path': 'assets/audio/birds.wav'},
+    {'title': 'Wind', 'icon': '💨', 'path': 'assets/audio/wind.wav'},
+    {'title': 'Fire', 'icon': '🔥', 'path': 'assets/audio/fire.wav'},
   ];
 
   int _selectedAmbient = -1;
@@ -78,6 +80,7 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
   void dispose() {
     _pulseController.dispose();
     _audioPlayer.dispose();
+    _ambientPlayer.dispose();
     super.dispose();
   }
 
@@ -177,7 +180,24 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
                   final sound = _ambientSounds[index];
                   final isActive = _selectedAmbient == index;
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedAmbient = isActive ? -1 : index),
+                    onTap: () async {
+                      final isCurrentlyActive = _selectedAmbient == index;
+                      setState(() {
+                        _selectedAmbient = isCurrentlyActive ? -1 : index;
+                      });
+                      try {
+                        if (isCurrentlyActive) {
+                          await _ambientPlayer.stop();
+                        } else {
+                          await _ambientPlayer.setAsset(sound['path'] as String);
+                          await _ambientPlayer.setVolume(_ambientVolume);
+                          await _ambientPlayer.setLoopMode(LoopMode.all);
+                          _ambientPlayer.play();
+                        }
+                      } catch (e) {
+                        debugPrint('Error playing ambient sound: $e');
+                      }
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.only(right: 12),
@@ -205,6 +225,33 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
                 },
               ),
             ),
+            if (_selectedAmbient >= 0) ...[
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.volume_down_rounded, size: 20, color: AppColors.textSecondary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Slider(
+                        value: _ambientVolume,
+                        min: 0.0,
+                        max: 1.0,
+                        activeColor: AppColors.primaryPurple,
+                        onChanged: (val) {
+                          setState(() {
+                            _ambientVolume = val;
+                          });
+                          _ambientPlayer.setVolume(val);
+                        },
+                      ),
+                    ),
+                    const Icon(Icons.volume_up_rounded, size: 20, color: AppColors.textSecondary),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
