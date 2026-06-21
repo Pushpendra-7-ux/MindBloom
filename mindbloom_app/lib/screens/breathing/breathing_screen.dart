@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
 import '../../models/breathing_model.dart';
 import '../../services/haptic_util.dart';
@@ -26,6 +28,9 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
   late int _secondsLeft;
   late BreathingProgram _selectedProgram;
 
+  int _totalCompletedSessions = 0;
+  int _todayCompletedSessions = 0;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +46,43 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
     _opacityAnimation = Tween<double>(begin: 0.3, end: 0.8).animate(
       CurvedAnimation(parent: _breathController, curve: Curves.easeInOut),
     );
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final lastDateStr = prefs.getString('breathing_last_date') ?? '';
+
+    setState(() {
+      _totalCompletedSessions = prefs.getInt('breathing_sessions_total') ?? 0;
+      if (lastDateStr == todayStr) {
+        _todayCompletedSessions = prefs.getInt('breathing_sessions_today') ?? 0;
+      } else {
+        _todayCompletedSessions = 0;
+      }
+    });
+  }
+
+  Future<void> _logCompletedSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    final totalCount = prefs.getInt('breathing_sessions_total') ?? 0;
+    await prefs.setInt('breathing_sessions_total', totalCount + 1);
+
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final lastDateStr = prefs.getString('breathing_last_date') ?? '';
+    
+    int dailyCount = prefs.getInt('breathing_sessions_today') ?? 0;
+    if (lastDateStr == todayStr) {
+      dailyCount += 1;
+    } else {
+      dailyCount = 1;
+      await prefs.setString('breathing_last_date', todayStr);
+    }
+    await prefs.setInt('breathing_sessions_today', dailyCount);
+
+    _loadStats();
   }
 
   @override
@@ -128,6 +170,7 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
   }
 
   void _showCompleteDialog() {
+    _logCompletedSession();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -409,12 +452,66 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                       }),
                     ],
                   ),
+                  const SizedBox(height: 32),
+
+                  // Stats dashboard panel
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardTheme.color,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.05),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStatItem('Today\'s Sessions', '$_todayCompletedSessions', '🧘'),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: Colors.grey.withValues(alpha: 0.2),
+                        ),
+                        _buildStatItem('Total Sessions', '$_totalCompletedSessions', '🔥'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, String icon) {
+    return Row(
+      children: [
+        Text(icon, style: const TextStyle(fontSize: 20)),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
