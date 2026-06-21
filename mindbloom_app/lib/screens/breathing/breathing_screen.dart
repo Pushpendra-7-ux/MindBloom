@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
 import '../../models/breathing_model.dart';
+import '../../services/haptic_util.dart';
 import '../../widgets/custom_button.dart';
 
 class BreathingScreen extends StatefulWidget {
@@ -99,7 +100,10 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
       setState(() => _secondsLeft--);
       if (_secondsLeft <= 0) {
         timer.cancel();
+        HapticUtil.mediumImpact();
         _nextPhase();
+      } else {
+        HapticUtil.selectionClick();
       }
     });
   }
@@ -304,7 +308,27 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                       );
                     },
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 24),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Container(
+                      key: ValueKey('${_selectedProgram.id}_$_currentPhase'),
+                      height: 60,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      alignment: Alignment.center,
+                      child: Text(
+                        phase.instruction,
+                        key: ValueKey('${_selectedProgram.id}_${_currentPhase}_text'),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: phase.color.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w500,
+                              height: 1.4,
+                            ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
                   // Phase indicators
                   Row(
