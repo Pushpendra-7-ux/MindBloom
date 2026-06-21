@@ -17,29 +17,22 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
   late Animation<double> _opacityAnimation;
 
   bool _isRunning = false;
-  int _currentPhase = 0; // 0: inhale, 1: hold, 2: exhale, 3: hold
+  int _currentPhase = 0;
   int _currentRound = 0;
   int _totalRounds = 4;
   Timer? _phaseTimer;
 
-  // 4-7-8 breathing
-  final List<Map<String, dynamic>> _phases = [
-    {'name': 'Breathe In', 'duration': 4, 'color': AppColors.calmBlue},
-    {'name': 'Hold', 'duration': 7, 'color': AppColors.primaryPurple},
-    {'name': 'Breathe Out', 'duration': 8, 'color': AppColors.softGreen},
-    {'name': 'Hold', 'duration': 2, 'color': AppColors.warmAmber},
-  ];
-
-  int _secondsLeft = 4;
+  late int _secondsLeft;
   late BreathingProgram _selectedProgram;
 
   @override
   void initState() {
     super.initState();
     _selectedProgram = BreathingProgram.presets.first;
+    _secondsLeft = _selectedProgram.phases.first.duration;
     _breathController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: Duration(seconds: _secondsLeft),
     );
     _sizeAnimation = Tween<double>(begin: 120, end: 220).animate(
       CurvedAnimation(parent: _breathController, curve: Curves.easeInOut),
@@ -78,21 +71,23 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
       _isRunning = false;
       _currentPhase = 0;
       _currentRound = 0;
-      _secondsLeft = _phases[0]['duration'] as int;
+      _secondsLeft = _selectedProgram.phases.first.duration;
     });
   }
 
   void _runPhase() {
-    final phase = _phases[_currentPhase];
-    final duration = phase['duration'] as int;
+    final phase = _selectedProgram.phases[_currentPhase];
+    final duration = phase.duration;
     _secondsLeft = duration;
 
     // Animate circle
     _breathController.duration = Duration(seconds: duration);
-    if (_currentPhase == 0) {
+    if (phase.name.toLowerCase().contains('in')) {
       _breathController.forward();
-    } else if (_currentPhase == 2) {
+    } else if (phase.name.toLowerCase().contains('out')) {
       _breathController.reverse();
+    } else {
+      // Hold phase: keep it in current state (either max size or min size)
     }
 
     // Timer countdown
@@ -110,7 +105,7 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
   }
 
   void _nextPhase() {
-    if (_currentPhase < 3) {
+    if (_currentPhase < _selectedProgram.phases.length - 1) {
       setState(() => _currentPhase++);
       _runPhase();
     } else {
@@ -158,7 +153,7 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    final phase = _phases[_currentPhase];
+    final phase = _selectedProgram.phases[_currentPhase];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Breathing Exercise')),
@@ -268,17 +263,17 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              (phase['color'] as Color).withValues(alpha: _isRunning ? _opacityAnimation.value : 0.3),
-                              (phase['color'] as Color).withValues(alpha: 0.05),
+                              phase.color.withValues(alpha: _isRunning ? _opacityAnimation.value : 0.3),
+                              phase.color.withValues(alpha: 0.05),
                             ],
                           ),
                           border: Border.all(
-                            color: (phase['color'] as Color).withValues(alpha: 0.6),
+                            color: phase.color.withValues(alpha: 0.6),
                             width: 3,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: (phase['color'] as Color).withValues(alpha: 0.2),
+                              color: phase.color.withValues(alpha: 0.2),
                               blurRadius: 30,
                               spreadRadius: 5,
                             ),
@@ -288,9 +283,9 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              phase['name'] as String,
+                              phase.name,
                               style: TextStyle(
-                                color: phase['color'] as Color,
+                                color: phase.color,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
                               ),
@@ -299,7 +294,7 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                               Text(
                                 '$_secondsLeft',
                                 style: TextStyle(
-                                  color: phase['color'] as Color,
+                                  color: phase.color,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 36,
                                 ),
@@ -314,7 +309,7 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                   // Phase indicators
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(4, (index) {
+                    children: List.generate(_selectedProgram.phases.length, (index) {
                       final isActive = index == _currentPhase && _isRunning;
                       return Container(
                         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -322,8 +317,8 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                         height: 10,
                         decoration: BoxDecoration(
                           color: isActive
-                              ? _phases[index]['color'] as Color
-                              : (_phases[index]['color'] as Color).withValues(alpha: 0.25),
+                              ? _selectedProgram.phases[index].color
+                              : _selectedProgram.phases[index].color.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(5),
                         ),
                       );
