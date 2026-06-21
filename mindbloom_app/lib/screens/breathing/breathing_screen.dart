@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
+import '../../models/breathing_model.dart';
 import '../../widgets/custom_button.dart';
 
 class BreathingScreen extends StatefulWidget {
@@ -30,10 +31,12 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
   ];
 
   int _secondsLeft = 4;
+  late BreathingProgram _selectedProgram;
 
   @override
   void initState() {
     super.initState();
+    _selectedProgram = BreathingProgram.presets.first;
     _breathController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -159,164 +162,239 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
 
     return Scaffold(
       appBar: AppBar(title: const Text('Breathing Exercise')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Round counter
-              Text(
-                'Round ${_currentRound + 1} / $_totalRounds',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Technique label
-              Text(
-                '4-7-8 Breathing',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 40),
-
-              // Breathing circle
-              AnimatedBuilder(
-                animation: _sizeAnimation,
-                builder: (context, child) {
-                  return Container(
-                    width: _isRunning ? _sizeAnimation.value : 160,
-                    height: _isRunning ? _sizeAnimation.value : 160,
+      body: Column(
+        children: [
+          // Program Selector
+          Container(
+            height: 90,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: BreathingProgram.presets.length,
+              itemBuilder: (context, idx) {
+                final prog = BreathingProgram.presets[idx];
+                final isSelected = prog.id == _selectedProgram.id;
+                return GestureDetector(
+                  onTap: () {
+                    if (_isRunning) _reset();
+                    setState(() {
+                      _selectedProgram = prog;
+                    });
+                  },
+                  child: Container(
+                    width: 150,
+                    margin: const EdgeInsets.only(right: 10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          (phase['color'] as Color).withValues(alpha: _isRunning ? _opacityAnimation.value : 0.3),
-                          (phase['color'] as Color).withValues(alpha: 0.05),
-                        ],
-                      ),
+                      color: isSelected
+                          ? AppColors.primaryPurple.withValues(alpha: 0.1)
+                          : Theme.of(context).cardTheme.color,
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: (phase['color'] as Color).withValues(alpha: 0.6),
-                        width: 3,
+                        color: isSelected
+                            ? AppColors.primaryPurple
+                            : Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.black.withValues(alpha: 0.08),
+                        width: isSelected ? 2 : 1,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (phase['color'] as Color).withValues(alpha: 0.2),
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                        ),
-                      ],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          phase['name'] as String,
-                          style: TextStyle(
-                            color: phase['color'] as Color,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        if (_isRunning)
-                          Text(
-                            '$_secondsLeft',
-                            style: TextStyle(
-                              color: phase['color'] as Color,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 36,
+                        Row(
+                          children: [
+                            Text(prog.emoji, style: const TextStyle(fontSize: 16)),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                prog.name,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? AppColors.primaryPurple : null,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${prog.totalDuration}s cycle',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                        ),
                       ],
                     ),
-                  );
-                },
-              ),
-              const SizedBox(height: 48),
-
-              // Phase indicators
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (index) {
-                  final isActive = index == _currentPhase && _isRunning;
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: isActive ? 32 : 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? _phases[index]['color'] as Color
-                          : (_phases[index]['color'] as Color).withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 48),
-
-              // Controls
-              Row(
+                  ),
+                );
+              },
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (_isRunning || _currentRound > 0) ...[
-                    CustomButton(
-                      label: 'Reset',
-                      isOutlined: true,
-                      width: 120,
-                      onPressed: _reset,
+                  // Round counter
+                  Text(
+                    'Round ${_currentRound + 1} / $_totalRounds',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.textSecondary,
                     ),
-                    const SizedBox(width: 16),
-                  ],
-                  CustomButton(
-                    label: _isRunning ? 'Pause' : 'Start',
-                    width: 160,
-                    color: _isRunning ? AppColors.warmAmber : AppColors.softGreen,
-                    icon: _isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    onPressed: _isRunning ? _pause : _start,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Technique label
+                  Text(
+                    _selectedProgram.name,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Breathing circle
+                  AnimatedBuilder(
+                    animation: _sizeAnimation,
+                    builder: (context, child) {
+                      return Container(
+                        width: _isRunning ? _sizeAnimation.value : 160,
+                        height: _isRunning ? _sizeAnimation.value : 160,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              (phase['color'] as Color).withValues(alpha: _isRunning ? _opacityAnimation.value : 0.3),
+                              (phase['color'] as Color).withValues(alpha: 0.05),
+                            ],
+                          ),
+                          border: Border.all(
+                            color: (phase['color'] as Color).withValues(alpha: 0.6),
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (phase['color'] as Color).withValues(alpha: 0.2),
+                              blurRadius: 30,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              phase['name'] as String,
+                              style: TextStyle(
+                                color: phase['color'] as Color,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (_isRunning)
+                              Text(
+                                '$_secondsLeft',
+                                style: TextStyle(
+                                  color: phase['color'] as Color,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 36,
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 48),
+
+                  // Phase indicators
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(4, (index) {
+                      final isActive = index == _currentPhase && _isRunning;
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: isActive ? 32 : 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? _phases[index]['color'] as Color
+                              : (_phases[index]['color'] as Color).withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 48),
+
+                  // Controls
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isRunning || _currentRound > 0) ...[
+                        CustomButton(
+                          label: 'Reset',
+                          isOutlined: true,
+                          width: 120,
+                          onPressed: _reset,
+                        ),
+                        const SizedBox(width: 16),
+                      ],
+                      CustomButton(
+                        label: _isRunning ? 'Pause' : 'Start',
+                        width: 160,
+                        color: _isRunning ? AppColors.warmAmber : AppColors.softGreen,
+                        icon: _isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                        onPressed: _isRunning ? _pause : _start,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+                  // Rounds selector
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Rounds: ', style: Theme.of(context).textTheme.bodyMedium),
+                      ...List.generate(4, (i) {
+                        final rounds = [2, 4, 6, 8];
+                        return GestureDetector(
+                          onTap: _isRunning ? null : () => setState(() => _totalRounds = rounds[i]),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _totalRounds == rounds[i]
+                                  ? AppColors.primaryPurple
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: _totalRounds == rounds[i]
+                                    ? AppColors.primaryPurple
+                                    : Colors.black.withValues(alpha: 0.15),
+                              ),
+                            ),
+                            child: Text(
+                              '${rounds[i]}',
+                              style: TextStyle(
+                                color: _totalRounds == rounds[i] ? Colors.white : null,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
                   ),
                 ],
               ),
-
-              const SizedBox(height: 24),
-              // Rounds selector
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Rounds: ', style: Theme.of(context).textTheme.bodyMedium),
-                  ...List.generate(4, (i) {
-                    final rounds = [2, 4, 6, 8];
-                    return GestureDetector(
-                      onTap: _isRunning ? null : () => setState(() => _totalRounds = rounds[i]),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: _totalRounds == rounds[i]
-                              ? AppColors.primaryPurple
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _totalRounds == rounds[i]
-                                ? AppColors.primaryPurple
-                                : Colors.black.withValues(alpha: 0.15),
-                          ),
-                        ),
-                        child: Text(
-                          '${rounds[i]}',
-                          style: TextStyle(
-                            color: _totalRounds == rounds[i] ? Colors.white : null,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
