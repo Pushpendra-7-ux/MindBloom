@@ -486,43 +486,104 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildWaterTracker(BuildContext context) {
+    final waterState = ref.watch(waterProvider);
+    final cups = waterState.cups;
+    final goal = waterState.goal;
+    final progress = (cups / goal).clamp(0.0, 1.0);
+
     return CustomCard(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Hydration Tracker 💧',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+          // Animated glass cylinder visual
+          Container(
+            width: 50,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10), top: Radius.circular(4)),
+              border: Border.all(color: AppColors.calmBlue.withValues(alpha: 0.4), width: 2.5),
+              color: AppColors.calmBlue.withValues(alpha: 0.05),
+            ),
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeOutCubic,
+                  width: double.infinity,
+                  height: 80 * progress,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.vertical(
+                      bottom: const Radius.circular(8),
+                      top: Radius.circular(cups >= goal ? 2 : 0),
                     ),
-              ),
-              const Text(
-                'Goal: 8 cups',
-                style: TextStyle(
-                  color: AppColors.primaryPurple,
-                  fontWeight: FontWeight.w600,
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.calmBlue,
+                        AppColors.calmBlue.withValues(alpha: 0.7),
+                      ],
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Track your daily water intake to stay hydrated and active.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                Center(
+                  child: Text(
+                    '$cups',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      color: progress > 0.45 ? Colors.white : AppColors.primaryPurple,
+                    ),
+                  ),
                 ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          LinearProgressIndicator(
-            value: 0.0,
-            backgroundColor: Colors.grey.withValues(alpha: 0.1),
-            valueColor: const AlwaysStoppedAnimation(AppColors.calmBlue),
-            minHeight: 8,
-            borderRadius: BorderRadius.circular(4),
+          const SizedBox(width: 16),
+          // Info & Progress bar
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Hydration Tracker 💧',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    Text(
+                      '$cups / $goal cups',
+                      style: const TextStyle(
+                        color: AppColors.primaryPurple,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  cups >= goal
+                      ? 'Goal achieved! You are fully hydrated. 🎉'
+                      : 'Keep drinking water to stay refreshed.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.grey.withValues(alpha: 0.1),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.calmBlue),
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ],
+            ),
           ),
         ],
       ),
