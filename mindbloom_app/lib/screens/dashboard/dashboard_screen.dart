@@ -7,6 +7,7 @@ import '../../config/theme.dart';
 import '../../config/daily_quotes.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/mood_provider.dart';
+import '../../providers/water_provider.dart';
 import '../../widgets/custom_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -176,6 +177,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     );
                   }
                 ),
+                const SizedBox(height: 20),
+
+                // Hydration Tracker Skeleton Card
+                _buildWaterTracker(context),
                 const SizedBox(height: 24),
 
                 // Weekly mood chart
@@ -478,5 +483,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (score >= 40) return 'Fair 🙂';
     if (score >= 20) return 'Needs Attention 😐';
     return 'Reach Out for Help 💛';
+  }
+
+  Widget _buildWaterTracker(BuildContext context) {
+    return CustomCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Hydration Tracker 💧',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const Text(
+                'Goal: 8 cups',
+                style: TextStyle(
+                  color: AppColors.primaryPurple,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Track your daily water intake to stay hydrated and active.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 16),
+          LinearProgressIndicator(
+            value: 0.0,
+            backgroundColor: Colors.grey.withValues(alpha: 0.1),
+            valueColor: const AlwaysStoppedAnimation(AppColors.calmBlue),
+            minHeight: 8,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ],
+      ),
+    );
   }
 }
