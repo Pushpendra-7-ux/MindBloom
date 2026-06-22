@@ -8,6 +8,7 @@ import '../../config/daily_quotes.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/water_provider.dart';
+import '../../services/haptic_util.dart';
 import '../../widgets/custom_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -485,6 +486,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return 'Reach Out for Help 💛';
   }
 
+  void _celebrateGoal() {
+    HapticUtil.mediumImpact();
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Text('🎉 ', style: TextStyle(fontSize: 20)),
+            Expanded(
+              child: Text(
+                'Amazing job! You hit your daily water intake goal of 8 cups! 💧',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.softGreen,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   Widget _buildWaterTracker(BuildContext context) {
     final waterState = ref.watch(waterProvider);
     final cups = waterState.cups;
@@ -581,6 +606,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   valueColor: const AlwaysStoppedAnimation(AppColors.calmBlue),
                   minHeight: 8,
                   borderRadius: BorderRadius.circular(4),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton.outlined(
+                      onPressed: cups <= 0
+                          ? null
+                          : () {
+                              HapticUtil.selectionClick();
+                              ref.read(waterProvider.notifier).decrement();
+                            },
+                      icon: const Icon(Icons.remove_rounded),
+                      style: IconButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        side: BorderSide(
+                          color: AppColors.calmBlue.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton.filled(
+                      onPressed: () {
+                        HapticUtil.selectionClick();
+                        ref.read(waterProvider.notifier).increment();
+                        if (cups + 1 == goal) {
+                          _celebrateGoal();
+                        }
+                      },
+                      icon: const Icon(Icons.add_rounded),
+                      style: IconButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        backgroundColor: AppColors.calmBlue,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
