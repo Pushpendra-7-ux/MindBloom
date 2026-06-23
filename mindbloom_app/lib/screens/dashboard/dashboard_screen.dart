@@ -8,6 +8,7 @@ import '../../config/daily_quotes.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/water_provider.dart';
+import '../../providers/gratitude_provider.dart';
 import '../../services/haptic_util.dart';
 import '../../widgets/custom_card.dart';
 
@@ -182,6 +183,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                 // Hydration Tracker Skeleton Card
                 _buildWaterTracker(context),
+                const SizedBox(height: 24),
+
+                // Gratitude Journal Card
+                _buildGratitudeCard(context),
                 const SizedBox(height: 24),
 
                 // Weekly mood chart
@@ -506,6 +511,120 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         duration: const Duration(seconds: 4),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Widget _buildGratitudeCard(BuildContext context) {
+    final gratitudeState = ref.watch(gratitudeProvider);
+    final todayEntries = gratitudeState.todayEntries;
+
+    return CustomCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: const BoxDecoration(
+              gradient: AppColors.warmGradient,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                const Text('🌻', style: TextStyle(fontSize: 26)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Gratitude Journal',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        todayEntries.isEmpty
+                            ? 'What are you grateful for today?'
+                            : '${todayEntries.length} entr${todayEntries.length == 1 ? 'y' : 'ies'} today',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Body: today's entries or empty state
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: todayEntries.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        children: [
+                          Icon(Icons.edit_note_rounded, size: 36, color: Colors.grey[400]),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap below to add what made you smile today ✨',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: todayEntries.map((entry) {
+                      return Chip(
+                        label: Text(
+                          entry.text,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        avatar: const Icon(Icons.favorite_rounded, size: 16, color: AppColors.warmAmber),
+                        deleteIcon: const Icon(Icons.close_rounded, size: 16),
+                        onDeleted: () {
+                          ref.read(gratitudeProvider.notifier).remove(entry.id);
+                        },
+                        backgroundColor: AppColors.warmAmber.withValues(alpha: 0.1),
+                        side: BorderSide(color: AppColors.warmAmber.withValues(alpha: 0.25)),
+                      );
+                    }).toList(),
+                  ),
+          ),
+
+          // Input row — placeholder for Commit 3
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Add something you\'re grateful for…',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                  ),
+                ),
+                const Icon(Icons.add_circle_rounded, color: AppColors.warmAmber, size: 28),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
