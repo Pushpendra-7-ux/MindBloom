@@ -21,6 +21,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _isQuoteFavorited = false;
+  final _gratitudeController = TextEditingController();
 
   @override
   void initState() {
@@ -30,6 +31,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ref.read(moodProvider.notifier).fetchWeeklyData();
       _checkIfQuoteFavorited();
     });
+  }
+
+  @override
+  void dispose() {
+    _gratitudeController.dispose();
+    super.dispose();
+  }
+
+  // Submit gratitude entry
+  void _submitGratitude() {
+    final text = _gratitudeController.text.trim();
+    if (text.isEmpty) return;
+    // Add entry via provider
+    ref.read(gratitudeProvider.notifier).add(text);
+    _gratitudeController.clear();
+    // Haptic feedback
+    HapticUtil.mediumImpact();
+    // Celebration UI
+    _celebrateGratitude();
+  }
+
+  // Show a celebration SnackBar
+  void _celebrateGratitude() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Text('🎉 Added!'),
+            SizedBox(width: 8),
+            Expanded(child: Text('Your gratitude entry was saved.')),
+          ],
+        ),
+        backgroundColor: AppColors.warmAmber,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Future<void> _checkIfQuoteFavorited() async {
@@ -605,22 +643,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
           ),
 
-          // Input row — placeholder for Commit 3
+          // Input row
           const Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    'Add something you\'re grateful for…',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontStyle: FontStyle.italic,
-                        ),
+                  child: TextField(
+                    controller: _gratitudeController,
+                    textCapitalization: TextCapitalization.sentences,
+                    maxLength: 120,
+                    decoration: InputDecoration(
+                      hintText: 'I\'m grateful for…',
+                      hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                      counterText: '',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.warmAmber.withValues(alpha: 0.3)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.warmAmber.withValues(alpha: 0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.warmAmber, width: 1.5),
+                      ),
+                    ),
+                    onSubmitted: (_) => _submitGratitude(),
                   ),
                 ),
-                const Icon(Icons.add_circle_rounded, color: AppColors.warmAmber, size: 28),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _submitGratitude,
+                  icon: const Icon(Icons.add_circle_rounded),
+                  color: AppColors.warmAmber,
+                  iconSize: 32,
+                  tooltip: 'Add gratitude',
+                ),
               ],
             ),
           ),
