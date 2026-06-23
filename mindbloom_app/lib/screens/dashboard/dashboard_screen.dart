@@ -553,6 +553,144 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  void _showGratitudeGarden() {
+    final allEntries = ref.read(gratitudeProvider).entries;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          maxChildSize: 0.9,
+          minChildSize: 0.4,
+          builder: (_, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const Text('🌻', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Gratitude Garden',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${allEntries.length} total',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: allEntries.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.local_florist_rounded, size: 48, color: Colors.grey[300]),
+                                const SizedBox(height: 12),
+                                Text('No entries yet', style: Theme.of(context).textTheme.bodyMedium),
+                                const SizedBox(height: 4),
+                                Text('Start planting seeds of gratitude!', style: Theme.of(context).textTheme.bodySmall),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            controller: controller,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            itemCount: allEntries.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 8),
+                            itemBuilder: (_, index) {
+                              final entry = allEntries[index];
+                              final dateStr =
+                                  '${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year}';
+                              final timeStr =
+                                  '${entry.createdAt.hour.toString().padLeft(2, '0')}:${entry.createdAt.minute.toString().padLeft(2, '0')}';
+                              return Dismissible(
+                                key: Key(entry.id),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 20),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.delete_rounded, color: AppColors.error),
+                                ),
+                                onDismissed: (_) {
+                                  ref.read(gratitudeProvider.notifier).remove(entry.id);
+                                  Navigator.of(ctx).pop();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warmAmber.withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.warmAmber.withValues(alpha: 0.15),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('🌱', style: TextStyle(fontSize: 18)),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              entry.text,
+                                              style: Theme.of(context).textTheme.bodyLarge,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '$dateStr  •  $timeStr',
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                    color: AppColors.textSecondary,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildGratitudeCard(BuildContext context) {
     final gratitudeState = ref.watch(gratitudeProvider);
     final todayEntries = gratitudeState.todayEntries;
@@ -596,6 +734,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  onPressed: _showGratitudeGarden,
+                  icon: const Icon(Icons.grid_view_rounded, color: Colors.white, size: 22),
+                  tooltip: 'View all entries',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
