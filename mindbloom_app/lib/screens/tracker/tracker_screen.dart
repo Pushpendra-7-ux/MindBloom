@@ -80,6 +80,19 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
     } catch (_) {}
   }
 
+  Future<void> _toggleGoal(int index) async {
+    if (_tracker == null || index < 0 || index >= _tracker!.goals.length) return;
+    final goals = List<GoalItem>.from(_tracker!.goals);
+    final goal = goals[index];
+    goals[index] = GoalItem(title: goal.title, completed: !goal.completed);
+    setState(() {
+      _tracker = _tracker!.copyWith(goals: goals);
+    });
+    try {
+      await ApiService().updateTracker(_tracker!.toJson());
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -238,32 +251,35 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
             else
               ...tracker.goals.asMap().entries.map((entry) {
                 final goal = entry.value;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardTheme.color,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        goal.completed ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
-                        color: goal.completed ? AppColors.softGreen : AppColors.textSecondary,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          goal.title,
-                          style: TextStyle(
-                            decoration: goal.completed ? TextDecoration.lineThrough : null,
-                            color: goal.completed ? AppColors.textSecondary : null,
+                return GestureDetector(
+                  onTap: () => _toggleGoal(entry.key),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardTheme.color,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          goal.completed ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+                          color: goal.completed ? AppColors.softGreen : AppColors.textSecondary,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            goal.title,
+                            style: TextStyle(
+                              decoration: goal.completed ? TextDecoration.lineThrough : null,
+                              color: goal.completed ? AppColors.textSecondary : null,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }),
