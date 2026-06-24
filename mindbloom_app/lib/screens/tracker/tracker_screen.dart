@@ -224,11 +224,43 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
               );
             }),
 
-            const SizedBox(height: 24),
-
             // Daily Goals
-            Text('Daily Goals', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Daily Goals', style: Theme.of(context).textTheme.headlineSmall),
+                if (tracker.goals.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.softGreen.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${tracker.goals.where((g) => g.completed).length}/${tracker.goals.length} Done',
+                      style: const TextStyle(
+                        color: AppColors.softGreen,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (tracker.goals.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: tracker.goals.where((g) => g.completed).length / tracker.goals.length,
+                  backgroundColor: Colors.black.withValues(alpha: 0.05),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.softGreen),
+                  minHeight: 6,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ] else
+              const SizedBox(height: 4),
             Row(
               children: [
                 Expanded(
