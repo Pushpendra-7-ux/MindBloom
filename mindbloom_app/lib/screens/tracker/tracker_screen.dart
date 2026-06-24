@@ -93,6 +93,18 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
     } catch (_) {}
   }
 
+  Future<void> _deleteGoal(int index) async {
+    if (_tracker == null || index < 0 || index >= _tracker!.goals.length) return;
+    final goals = List<GoalItem>.from(_tracker!.goals);
+    goals.removeAt(index);
+    setState(() {
+      _tracker = _tracker!.copyWith(goals: goals);
+    });
+    try {
+      await ApiService().updateTracker(_tracker!.toJson());
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -251,34 +263,48 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
             else
               ...tracker.goals.asMap().entries.map((entry) {
                 final goal = entry.value;
-                return GestureDetector(
-                  onTap: () => _toggleGoal(entry.key),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                return Dismissible(
+                  key: ValueKey('${goal.title}_${entry.key}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).cardTheme.color,
+                      color: AppColors.error.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          goal.completed ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
-                          color: goal.completed ? AppColors.softGreen : AppColors.textSecondary,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            goal.title,
-                            style: TextStyle(
-                              decoration: goal.completed ? TextDecoration.lineThrough : null,
-                              color: goal.completed ? AppColors.textSecondary : null,
+                    child: const Icon(Icons.delete_rounded, color: AppColors.error),
+                  ),
+                  onDismissed: (_) => _deleteGoal(entry.key),
+                  child: GestureDetector(
+                    onTap: () => _toggleGoal(entry.key),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            goal.completed ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+                            color: goal.completed ? AppColors.softGreen : AppColors.textSecondary,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              goal.title,
+                              style: TextStyle(
+                                decoration: goal.completed ? TextDecoration.lineThrough : null,
+                                color: goal.completed ? AppColors.textSecondary : null,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );
