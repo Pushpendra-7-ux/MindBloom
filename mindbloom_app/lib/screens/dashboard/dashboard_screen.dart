@@ -99,6 +99,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     await prefs.setStringList('favorited_quotes', favoritedList);
   }
 
+  void _showSavedQuotes() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: const Center(
+            child: Text('Saved Quotes Bottom Sheet'),
+          ),
+        );
+      },
+    );
+  }
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good Morning';
@@ -388,15 +408,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Icon(
-                  _isQuoteFavorited ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  color: Colors.white,
-                  size: 26,
-                ),
-                onPressed: _toggleFavoriteQuote,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(
+                      Icons.bookmarks_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    onPressed: _showSavedQuotes,
+                    tooltip: 'Saved Quotes',
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(
+                      _isQuoteFavorited ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                    onPressed: _toggleFavoriteQuote,
+                  ),
+                ],
               ),
             ],
           ),
