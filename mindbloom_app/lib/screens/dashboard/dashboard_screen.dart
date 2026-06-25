@@ -174,10 +174,44 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   ),
                             ),
                             const Spacer(),
-                            Text(
-                              '${savedQuotes.length} saved',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
+                            if (savedQuotes.isNotEmpty)
+                              TextButton(
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Clear All'),
+                                      content: const Text('Are you sure you want to remove all saved quotes?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          child: const Text('Clear'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirm == true) {
+                                    final prefs = await SharedPreferences.getInstance();
+                                    await prefs.remove('favorited_quotes');
+                                    _checkIfQuoteFavorited();
+                                    setSheetState(() {});
+                                  }
+                                },
+                                child: const Text(
+                                  'Clear All',
+                                  style: TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w600),
+                                ),
+                              )
+                            else
+                              Text(
+                                '${savedQuotes.length} saved',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
                           ],
                         ),
                       ),
@@ -185,7 +219,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Expanded(
                         child: savedQuotes.isEmpty
                             ? Center(
-                                child: Text('No saved quotes yet!', style: Theme.of(context).textTheme.bodyMedium),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.bookmark_outline_rounded, size: 48, color: Colors.grey[400]),
+                                    const SizedBox(height: 12),
+                                    Text('No saved quotes yet!', style: Theme.of(context).textTheme.bodyLarge),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Tap the heart icon on your daily quote to save it here.',
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                                    ),
+                                  ],
+                                ),
                               )
                             : ListView.separated(
                                 padding: const EdgeInsets.all(20),
