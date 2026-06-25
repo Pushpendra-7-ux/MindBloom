@@ -99,21 +99,128 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     await prefs.setStringList('favorited_quotes', favoritedList);
   }
 
+  Future<List<Map<String, String>>> _getSavedQuotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoritedList = prefs.getStringList('favorited_quotes') ?? [];
+    return favoritedList.map((q) {
+      final parts = q.split('~');
+      final text = parts.isNotEmpty ? parts[0] : '';
+      final author = parts.length > 1 ? parts[1] : 'Unknown';
+      return {'text': text, 'author': author, 'raw': q};
+    }).toList();
+  }
+
   void _showSavedQuotes() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: const Center(
-            child: Text('Saved Quotes Bottom Sheet'),
-          ),
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return FutureBuilder<List<Map<String, String>>>(
+              future: _getSavedQuotes(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Container(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                final savedQuotes = snapshot.data ?? [];
+
+                return Container(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            const Text('💖', style: TextStyle(fontSize: 22)),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Saved Quotes',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${savedQuotes.length} saved',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: savedQuotes.isEmpty
+                            ? Center(
+                                child: Text('No saved quotes yet!', style: Theme.of(context).textTheme.bodyMedium),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.all(20),
+                                itemCount: savedQuotes.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  final quote = savedQuotes[index];
+                                  return Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).cardTheme.color,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: Colors.black.withValues(alpha: 0.08),
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '"${quote['text']}"',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '— ${quote['author']}',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: AppColors.textSecondary,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
         );
       },
     );
