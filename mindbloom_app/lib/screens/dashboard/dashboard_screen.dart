@@ -110,6 +110,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }).toList();
   }
 
+  Future<void> _unfavoriteQuote(String quoteKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoritedList = prefs.getStringList('favorited_quotes') ?? [];
+    if (favoritedList.contains(quoteKey)) {
+      favoritedList.remove(quoteKey);
+      await prefs.setStringList('favorited_quotes', favoritedList);
+      _checkIfQuoteFavorited();
+    }
+  }
+
   void _showSavedQuotes() {
     showModalBottomSheet(
       context: context,
@@ -193,21 +203,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         width: 0.5,
                                       ),
                                     ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          '"${quote['text']}"',
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                fontStyle: FontStyle.italic,
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '"${quote['text']}"',
+                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                      fontStyle: FontStyle.italic,
+                                                    ),
                                               ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                '— ${quote['author']}',
+                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                      color: AppColors.textSecondary,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '— ${quote['author']}',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                color: AppColors.textSecondary,
-                                              ),
+                                        const SizedBox(width: 10),
+                                        IconButton(
+                                          icon: const Icon(Icons.favorite_rounded, color: AppColors.error),
+                                          onPressed: () async {
+                                            await _unfavoriteQuote(quote['raw']!);
+                                            setSheetState(() {});
+                                          },
+                                          tooltip: 'Remove from saved',
                                         ),
                                       ],
                                     ),
