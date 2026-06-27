@@ -51,6 +51,76 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     } catch (_) {}
   }
 
+  void _showOptionsSheet(AppointmentModel apt) {
+    if (apt.id == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final isPast = apt.date.isBefore(DateTime.now());
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                apt.doctorName,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${apt.specialty[0].toUpperCase()}${apt.specialty.substring(1)} • ${apt.time}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              ),
+              if (apt.clinicName.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  apt.clinicName,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                ),
+              ],
+              const SizedBox(height: 24),
+              if (apt.status == 'scheduled' && !isPast) ...[
+                ListTile(
+                  leading: const Icon(Icons.cancel_outlined, color: AppColors.coral),
+                  title: const Text('Cancel Appointment', style: TextStyle(fontWeight: FontWeight.w500)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _updateAppointmentStatus(apt.id!, 'cancelled');
+                  },
+                ),
+                const Divider(height: 1),
+              ],
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                title: const Text('Delete Appointment', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w500)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _deleteAppointment(apt.id!);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showAddDialog() {
     final doctorController = TextEditingController();
     final clinicController = TextEditingController();
