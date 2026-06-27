@@ -242,47 +242,50 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     final isPast = apt.date.isBefore(DateTime.now());
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
-                      child: CustomCard(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: (isPast ? Colors.grey : AppColors.primaryPurple).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
+                      child: GestureDetector(
+                        onTap: () => _showOptionsSheet(apt),
+                        child: CustomCard(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: (isPast ? Colors.grey : AppColors.primaryPurple).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(DateFormat('d').format(apt.date), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: isPast ? Colors.grey : AppColors.primaryPurple)),
+                                    Text(DateFormat('MMM').format(apt.date), style: TextStyle(fontSize: 10, color: isPast ? Colors.grey : AppColors.primaryPurple)),
+                                  ],
+                                ),
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(DateFormat('d').format(apt.date), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: isPast ? Colors.grey : AppColors.primaryPurple)),
-                                  Text(DateFormat('MMM').format(apt.date), style: TextStyle(fontSize: 10, color: isPast ? Colors.grey : AppColors.primaryPurple)),
-                                ],
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(apt.doctorName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                                    Text('${apt.specialty[0].toUpperCase()}${apt.specialty.substring(1)} • ${apt.time}',
+                                      style: Theme.of(context).textTheme.bodySmall),
+                                    if (apt.clinicName.isNotEmpty)
+                                      Text(apt.clinicName, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(apt.doctorName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                                  Text('${apt.specialty[0].toUpperCase()}${apt.specialty.substring(1)} • ${apt.time}',
-                                    style: Theme.of(context).textTheme.bodySmall),
-                                  if (apt.clinicName.isNotEmpty)
-                                    Text(apt.clinicName, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                                ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _statusColor(apt.status).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(apt.status, style: TextStyle(fontSize: 11, color: _statusColor(apt.status), fontWeight: FontWeight.w500)),
                               ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _statusColor(apt.status).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(apt.status, style: TextStyle(fontSize: 11, color: _statusColor(apt.status), fontWeight: FontWeight.w500)),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );
