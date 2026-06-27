@@ -37,6 +37,20 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     }
   }
 
+  Future<void> _updateAppointmentStatus(String id, String status) async {
+    try {
+      await ApiService().updateAppointment(id, {'status': status});
+      _loadAppointments();
+    } catch (_) {}
+  }
+
+  Future<void> _deleteAppointment(String id) async {
+    try {
+      await ApiService().deleteAppointment(id);
+      _loadAppointments();
+    } catch (_) {}
+  }
+
   void _showAddDialog() {
     final doctorController = TextEditingController();
     final clinicController = TextEditingController();
