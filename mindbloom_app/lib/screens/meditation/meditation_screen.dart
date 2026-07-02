@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
+import '../../models/meditation_model.dart';
 import '../../widgets/custom_card.dart';
 
 class MeditationScreen extends StatefulWidget {
@@ -19,6 +23,15 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
   final AudioPlayer _audioPlayer = AudioPlayer();
   final AudioPlayer _ambientPlayer = AudioPlayer();
   double _ambientVolume = 0.5;
+
+  // Custom Timer State Variables
+  bool _isCustomMode = false;
+  int _customDurationMinutes = 10;
+  int _customSecondsLeft = 600;
+  bool _isCustomTimerPlaying = false;
+  Timer? _customTimer;
+  List<MeditationSession> _history = [];
+  int _totalMeditationTimeSeconds = 0;
 
   final List<Map<String, dynamic>> _sessions = [
     {'title': 'Calm Morning', 'duration': '10 min', 'icon': '🌅', 'color': AppColors.warmAmber, 'seconds': 600, 'path': 'assets/audio/calm.wav'},
@@ -93,13 +106,84 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Player area
-            if (_selectedIndex >= 0) ...[
-              _buildPlayer(context),
-              const SizedBox(height: 24),
-            ],
+            // Mode selector (Guided Sessions vs Custom Timer)
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isCustomMode = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: !_isCustomMode
+                            ? AppColors.primaryPurple.withValues(alpha: 0.15)
+                            : Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: !_isCustomMode ? AppColors.primaryPurple : Colors.black.withValues(alpha: 0.08),
+                          width: !_isCustomMode ? 1.5 : 0.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Guided Sessions',
+                          style: TextStyle(
+                            fontWeight: !_isCustomMode ? FontWeight.bold : FontWeight.normal,
+                            color: !_isCustomMode ? AppColors.primaryPurple : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isCustomMode = true;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _isCustomMode
+                            ? AppColors.primaryPurple.withValues(alpha: 0.15)
+                            : Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _isCustomMode ? AppColors.primaryPurple : Colors.black.withValues(alpha: 0.08),
+                          width: _isCustomMode ? 1.5 : 0.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Custom Timer',
+                          style: TextStyle(
+                            fontWeight: _isCustomMode ? FontWeight.bold : FontWeight.normal,
+                            color: _isCustomMode ? AppColors.primaryPurple : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
 
-            // Sessions
+            if (!_isCustomMode) ...[
+              // Player area
+              if (_selectedIndex >= 0) ...[
+                _buildPlayer(context),
+                const SizedBox(height: 24),
+              ],
+
+              // Sessions
             Text('Sessions', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 12),
             ListView.builder(
@@ -251,10 +335,91 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
                   ],
                 ),
               ),
+            ] else ...[
+              _buildCustomTimer(context),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCustomTimer(BuildContext context) {
+    final progress = _customDurationMinutes > 0
+        ? (_customDurationMinutes * 60 - _customSecondsLeft) / (_customDurationMinutes * 60)
+        : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Text(
+                'Meditation Timer',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Set your own duration and find your peaceful center.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 24),
+              // Big timer text
+              Text(
+                '${(_customSecondsLeft ~/ 60).toString().padLeft(2, '0')}:${(_customSecondsLeft % 60).toString().padLeft(2, '0')}',
+                style: const TextStyle(fontSize: 54, fontWeight: FontWeight.bold, letterSpacing: 2),
+              ),
+              const SizedBox(height: 12),
+              if (_isCustomTimerPlaying) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: AppColors.primaryPurple.withValues(alpha: 0.15),
+                    valueColor: const AlwaysStoppedAnimation(AppColors.primaryPurple),
+                    minHeight: 6,
+                  ),
+                ),
+              ] else ...[
+                Slider(
+                  value: _customDurationMinutes.toDouble(),
+                  min: 1.0,
+                  max: 60.0,
+                  divisions: 59,
+                  activeColor: AppColors.primaryPurple,
+                  label: '$_customDurationMinutes min',
+                  onChanged: (val) {
+                    setState(() {
+                      _customDurationMinutes = val.toInt();
+                      _customSecondsLeft = _customDurationMinutes * 60;
+                    });
+                  },
+                ),
+                Text(
+                  'Duration: $_customDurationMinutes minutes',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryPurple,
+                    ),
+                    child: Text(_isCustomTimerPlaying ? 'Pause' : 'Start'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
