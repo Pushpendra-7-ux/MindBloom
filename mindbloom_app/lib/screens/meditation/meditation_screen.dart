@@ -73,6 +73,10 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
             _audioPlayer.seek(Duration.zero);
             _audioPlayer.pause();
             _isPlaying = false;
+            if (_selectedIndex >= 0) {
+              final session = _sessions[_selectedIndex];
+              _saveCompletedSession(session['seconds'] as int, session['title'] as String, false);
+            }
           }
         });
       }
@@ -87,6 +91,8 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
         });
       }
     });
+
+    _loadMeditationHistory();
   }
 
   @override
@@ -344,6 +350,41 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
     );
   }
 
+  Future<void> _loadMeditationHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString('meditation_history') ?? '[]';
+    try {
+      final List decoded = jsonDecode(jsonStr);
+      final list = decoded.map((item) => MeditationSession.fromJson(item)).toList();
+      int totalSeconds = 0;
+      for (final s in list) {
+        totalSeconds += s.durationSeconds;
+      }
+      setState(() {
+        _history = list;
+        _totalMeditationTimeSeconds = totalSeconds;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _saveCompletedSession(int durationSeconds, String title, bool isCustom) async {
+    final prefs = await SharedPreferences.getInstance();
+    final session = MeditationSession(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      durationSeconds: durationSeconds,
+      date: DateTime.now(),
+      isCustom: isCustom,
+    );
+    final updatedList = List<MeditationSession>.from(_history)..insert(0, session);
+    final jsonStr = jsonEncode(updatedList.map((s) => s.toJson()).toList());
+    await prefs.setString('meditation_history', jsonStr);
+    setState(() {
+      _history = updatedList;
+      _totalMeditationTimeSeconds += durationSeconds;
+    });
+  }
+
   void _startCustomTimer() {
     if (_isCustomTimerPlaying) return;
     setState(() {
@@ -383,6 +424,7 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
   }
 
   void _onCustomTimerComplete() {
+    _saveCompletedSession(_customDurationMinutes * 60, 'Custom Silent Meditation', true);
     _showCustomCompleteDialog();
   }
 
@@ -407,6 +449,32 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
     );
   }
 
+  Widget _buildStatItem(String label, String value, String icon) {
+    return Row(
+      children: [
+        Text(icon, style: const TextStyle(fontSize: 20)),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildCustomTimer(BuildContext context) {
     final progress = _customDurationMinutes > 0
         ? (_customDurationMinutes * 60 - _customSecondsLeft) / (_customDurationMinutes * 60)
@@ -415,6 +483,22 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        CustomCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem('Sessions', '${_history.length}', '🧘'),
+              Container(
+                width: 1,
+                height: 30,
+                color: Colors.grey.withValues(alpha: 0.2),
+              ),
+              _buildStatItem('Total Time', '${_totalMeditationTimeSeconds ~/ 60}m', '🔥'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         CustomCard(
           padding: const EdgeInsets.all(20),
           child: Column(
