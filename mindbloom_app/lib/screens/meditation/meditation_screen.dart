@@ -344,6 +344,69 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
     );
   }
 
+  void _startCustomTimer() {
+    if (_isCustomTimerPlaying) return;
+    setState(() {
+      _isCustomTimerPlaying = true;
+    });
+
+    _customTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_customSecondsLeft > 0) {
+          _customSecondsLeft--;
+        } else {
+          timer.cancel();
+          _isCustomTimerPlaying = false;
+          _onCustomTimerComplete();
+        }
+      });
+    });
+  }
+
+  void _pauseCustomTimer() {
+    _customTimer?.cancel();
+    setState(() {
+      _isCustomTimerPlaying = false;
+    });
+  }
+
+  void _stopCustomTimer() {
+    _customTimer?.cancel();
+    setState(() {
+      _isCustomTimerPlaying = false;
+      _customSecondsLeft = _customDurationMinutes * 60;
+    });
+  }
+
+  void _onCustomTimerComplete() {
+    _showCustomCompleteDialog();
+  }
+
+  void _showCustomCompleteDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Mindful Session Complete 🌸'),
+        content: Text('You spent $_customDurationMinutes minutes in silent meditation. How do you feel?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _stopCustomTimer();
+            },
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCustomTimer(BuildContext context) {
     final progress = _customDurationMinutes > 0
         ? (_customDurationMinutes * 60 - _customSecondsLeft) / (_customDurationMinutes * 60)
@@ -373,7 +436,7 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
                 style: const TextStyle(fontSize: 54, fontWeight: FontWeight.bold, letterSpacing: 2),
               ),
               const SizedBox(height: 12),
-              if (_isCustomTimerPlaying) ...[
+              if (_isCustomTimerPlaying || _customSecondsLeft < _customDurationMinutes * 60) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
@@ -407,10 +470,24 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  if (_isCustomTimerPlaying || _customSecondsLeft < _customDurationMinutes * 60) ...[
+                    OutlinedButton(
+                      onPressed: _stopCustomTimer,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.primaryPurple),
+                        minimumSize: const Size(100, 40),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Reset'),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _isCustomTimerPlaying ? _pauseCustomTimer : _startCustomTimer,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryPurple,
+                      minimumSize: const Size(120, 40),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     child: Text(_isCustomTimerPlaying ? 'Pause' : 'Start'),
                   ),
