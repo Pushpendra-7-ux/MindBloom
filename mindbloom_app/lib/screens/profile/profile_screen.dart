@@ -214,9 +214,15 @@ class ProfileScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // Save logic will be wired in next commit
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final newName = controller.text.trim();
+              if (newName == currentName) {
+                Navigator.pop(ctx);
+                return;
+              }
               Navigator.pop(ctx);
+              await ref.read(authStateProvider.notifier).updateProfile({'name': newName});
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryPurple,
