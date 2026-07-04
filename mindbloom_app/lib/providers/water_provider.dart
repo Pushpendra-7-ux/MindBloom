@@ -77,4 +77,10 @@ class WaterNotifier extends StateNotifier<WaterState> {
     await prefs.setInt('water_cups', newCups);
     state = state.copyWith(cups: newCups, date: today);
   }
+
+  Future<void> setGoal(int newGoal) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('water_goal', newGoal);
+    state = state.copyWith(goal: newGoal);
+  }
 }
