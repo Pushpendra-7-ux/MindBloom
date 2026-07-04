@@ -341,9 +341,10 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
                   ],
                 ),
               ),
-            ] else ...[
-              _buildCustomTimer(context),
             ],
+          ] else ...[
+            _buildCustomTimer(context),
+          ],
           ],
         ),
       ),

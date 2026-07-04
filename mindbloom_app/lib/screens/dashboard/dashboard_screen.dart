@@ -1216,6 +1216,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+
   void _showWaterGoalDialog(BuildContext context) {
     final waterState = ref.read(waterProvider);
     final formKey = GlobalKey<FormState>();
