@@ -1120,18 +1120,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Hydration Tracker 💧',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                    Row(
+                      children: [
+                        Text(
+                          'Hydration Tracker 💧',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(width: 6),
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => _showWaterGoalDialog(context),
+                          icon: const Icon(Icons.settings_outlined, size: 16, color: AppColors.textSecondary),
+                          tooltip: 'Change goal',
+                        ),
+                      ],
                     ),
-                    Text(
-                      '$cups / $goal cups',
-                      style: const TextStyle(
-                        color: AppColors.primaryPurple,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                    GestureDetector(
+                      onTap: () => _showWaterGoalDialog(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryPurple.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '$cups / $goal cups',
+                          style: const TextStyle(
+                            color: AppColors.primaryPurple,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
                     ),
                   ],
