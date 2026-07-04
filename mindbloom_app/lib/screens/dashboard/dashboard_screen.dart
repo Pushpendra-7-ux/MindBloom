@@ -1194,6 +1194,140 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
+  void _showWaterGoalDialog(BuildContext context) {
+    final waterState = ref.read(waterProvider);
+    final formKey = GlobalKey<FormState>();
+    final controller = TextEditingController(text: waterState.goal.toString());
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.calmBlue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.water_drop_rounded, color: AppColors.calmBlue, size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Text('Daily Water Goal'),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Set your daily water consumption goal. We recommend 8 cups (approx. 2 liters) or more depending on your activity level.',
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton.outlined(
+                      onPressed: () {
+                        final val = int.tryParse(controller.text) ?? 8;
+                        if (val > 4) {
+                          controller.text = (val - 1).toString();
+                        }
+                      },
+                      icon: const Icon(Icons.remove),
+                      style: IconButton.styleFrom(
+                        side: const BorderSide(color: AppColors.calmBlue),
+                      ),
+                    ),
+                    Container(
+                      width: 90,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextFormField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          hintText: '8',
+                          suffixText: 'cups',
+                          suffixStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.calmBlue, width: 2),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Required';
+                          }
+                          final goal = int.tryParse(value);
+                          if (goal == null) {
+                            return 'Invalid';
+                          }
+                          if (goal < 4 || goal > 20) {
+                            return '4-20 cups';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    IconButton.filled(
+                      onPressed: () {
+                        final val = int.tryParse(controller.text) ?? 8;
+                        if (val < 20) {
+                          controller.text = (val + 1).toString();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.calmBlue,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                final newGoal = int.tryParse(controller.text);
+                if (newGoal != null) {
+                  await ref.read(waterProvider.notifier).setGoal(newGoal);
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Daily water goal updated to $newGoal cups! 💧'),
+                        backgroundColor: AppColors.calmBlue,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.calmBlue,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
