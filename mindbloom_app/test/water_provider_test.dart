@@ -41,5 +41,19 @@ void main() {
       await notifier.decrement();
       expect(notifier.state.cups, equals(0));
     });
+
+    test('setGoal updates goal state', () async {
+      final notifier = WaterNotifier();
+      await Future.delayed(Duration.zero);
+      await notifier.setGoal(12);
+      expect(notifier.state.goal, equals(12));
+    });
+
+    test('setGoal persists goal and initializes with it', () async {
+      SharedPreferences.setMockInitialValues({'water_goal': 15});
+      final notifier = WaterNotifier();
+      await Future.delayed(Duration.zero);
+      expect(notifier.state.goal, equals(15));
+    });
   });
 }
