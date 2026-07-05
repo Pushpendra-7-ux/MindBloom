@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,6 +29,8 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
   late int _secondsLeft;
   late BreathingProgram _selectedProgram;
 
+  BreathingProgram? _customProgram;
+
   int _totalCompletedSessions = 0;
   int _todayCompletedSessions = 0;
 
@@ -54,7 +57,16 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
     final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final lastDateStr = prefs.getString('breathing_last_date') ?? '';
 
+    final customJson = prefs.getString('breathing_custom_program');
+    BreathingProgram? customProg;
+    if (customJson != null) {
+      try {
+        customProg = BreathingProgram.fromJson(jsonDecode(customJson));
+      } catch (_) {}
+    }
+
     setState(() {
+      _customProgram = customProg;
       _totalCompletedSessions = prefs.getInt('breathing_sessions_total') ?? 0;
       if (lastDateStr == todayStr) {
         _todayCompletedSessions = prefs.getInt('breathing_sessions_today') ?? 0;
@@ -213,9 +225,50 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: BreathingProgram.presets.length,
+              itemCount: BreathingProgram.presets.length + 1 + (_customProgram != null ? 1 : 0),
               itemBuilder: (context, idx) {
-                final prog = BreathingProgram.presets[idx];
+                final isCustomAddCard = idx == BreathingProgram.presets.length + (_customProgram != null ? 1 : 0);
+                final isCustomProgramCard = _customProgram != null && idx == BreathingProgram.presets.length;
+
+                if (isCustomAddCard) {
+                  return GestureDetector(
+                    onTap: () {
+                      if (_isRunning) _reset();
+                      // Show custom breathing dialog (wired in next commit)
+                    },
+                    child: Container(
+                      width: 150,
+                      margin: const EdgeInsets.only(right: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.black.withValues(alpha: 0.08),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.add_rounded, color: AppColors.primaryPurple, size: 24),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Custom Program',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryPurple,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final prog = isCustomProgramCard ? _customProgram! : BreathingProgram.presets[idx];
                 final isSelected = prog.id == _selectedProgram.id;
                 return GestureDetector(
                   onTap: () {
