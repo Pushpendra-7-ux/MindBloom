@@ -234,7 +234,7 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                   return GestureDetector(
                     onTap: () {
                       if (_isRunning) _reset();
-                      // Show custom breathing dialog (wired in next commit)
+                      _showCustomBreathingDialog();
                     },
                     child: Container(
                       width: 150,
@@ -565,6 +565,179 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
           ],
         ),
       ],
+    );
+  }
+
+  void _showCustomBreathingDialog() {
+    int inhale = 4;
+    int hold = 4;
+    int exhale = 4;
+    int holdEmpty = 2;
+
+    // Pre-fill from existing custom program
+    if (_customProgram != null) {
+      for (final p in _customProgram!.phases) {
+        final name = p.name.toLowerCase();
+        if (name.contains('breathe in')) inhale = p.duration;
+        else if (name == 'hold') hold = p.duration;
+        else if (name.contains('breathe out')) exhale = p.duration;
+        else if (name.contains('hold empty')) holdEmpty = p.duration;
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final totalCycle = inhale + hold + exhale + holdEmpty;
+            return Container(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Title
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryPurple.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text('✨', style: TextStyle(fontSize: 20)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Custom Breathing', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+                            Text('Total cycle: ${totalCycle}s', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Sliders
+                  _buildDurationSlider('Inhale', inhale, AppColors.calmBlue, (v) {
+                    setSheetState(() => inhale = v);
+                  }),
+                  _buildDurationSlider('Hold', hold, AppColors.primaryPurple, (v) {
+                    setSheetState(() => hold = v);
+                  }),
+                  _buildDurationSlider('Exhale', exhale, AppColors.softGreen, (v) {
+                    setSheetState(() => exhale = v);
+                  }),
+                  _buildDurationSlider('Hold Empty', holdEmpty, AppColors.warmAmber, (v) {
+                    setSheetState(() => holdEmpty = v);
+                  }),
+                  const SizedBox(height: 20),
+                  // Save button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final custom = BreathingProgram.createCustom(
+                          inhale: inhale,
+                          hold: hold,
+                          exhale: exhale,
+                          holdEmpty: holdEmpty,
+                        );
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setString('breathing_custom_program', jsonEncode(custom.toJson()));
+                        if (mounted) {
+                          setState(() {
+                            _customProgram = custom;
+                            _selectedProgram = custom;
+                            _reset();
+                          });
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Custom breathing program saved! ✨'),
+                              backgroundColor: AppColors.primaryPurple,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryPurple,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Save & Use', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDurationSlider(String label, int value, Color color, ValueChanged<int> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+          ),
+          Expanded(
+            child: SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: color,
+                thumbColor: color,
+                inactiveTrackColor: color.withValues(alpha: 0.15),
+                overlayColor: color.withValues(alpha: 0.1),
+              ),
+              child: Slider(
+                value: value.toDouble(),
+                min: 0,
+                max: 10,
+                divisions: 10,
+                onChanged: (v) => onChanged(v.round()),
+              ),
+            ),
+          ),
+          Container(
+            width: 36,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '${value}s',
+              style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
