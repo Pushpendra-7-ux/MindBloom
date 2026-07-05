@@ -32,6 +32,76 @@ class BreathingProgram {
 
   int get totalDuration => phases.fold(0, (sum, phase) => sum + phase.duration);
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'description': description,
+        'emoji': emoji,
+        'phases': phases.map((p) => {
+              'name': p.name,
+              'duration': p.duration,
+              'colorValue': p.color.value,
+              'instruction': p.instruction,
+            }).toList(),
+      };
+
+  factory BreathingProgram.fromJson(Map<String, dynamic> json) {
+    return BreathingProgram(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      emoji: json['emoji'] as String,
+      phases: (json['phases'] as List).map((p) => BreathingPhase(
+            name: p['name'] as String,
+            duration: p['duration'] as int,
+            color: Color(p['colorValue'] as int),
+            instruction: p['instruction'] as String,
+          )).toList(),
+    );
+  }
+
+  static BreathingProgram createCustom({
+    required int inhale,
+    required int hold,
+    required int exhale,
+    required int holdEmpty,
+  }) {
+    return BreathingProgram(
+      id: 'custom',
+      name: 'Custom Breath',
+      description: 'Your personalized breathing rhythm.',
+      emoji: '✨',
+      phases: [
+        BreathingPhase(
+          name: 'Breathe In',
+          duration: inhale,
+          color: AppColors.calmBlue,
+          instruction: 'Inhale slowly and fill your lungs.',
+        ),
+        if (hold > 0)
+          BreathingPhase(
+            name: 'Hold',
+            duration: hold,
+            color: AppColors.primaryPurple,
+            instruction: 'Hold the breath in and relax.',
+          ),
+        BreathingPhase(
+          name: 'Breathe Out',
+          duration: exhale,
+          color: AppColors.softGreen,
+          instruction: 'Exhale completely and release.',
+        ),
+        if (holdEmpty > 0)
+          BreathingPhase(
+            name: 'Hold Empty',
+            duration: holdEmpty,
+            color: AppColors.warmAmber,
+            instruction: 'Hold empty before the next breath.',
+          ),
+      ],
+    );
+  }
+
   static final List<BreathingProgram> presets = [
     BreathingProgram(
       id: '478',
