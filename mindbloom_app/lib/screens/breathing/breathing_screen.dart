@@ -65,8 +65,20 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
       } catch (_) {}
     }
 
+    final selectedProgId = prefs.getString('breathing_selected_program_id') ?? '478';
+    BreathingProgram selected = BreathingProgram.presets.firstWhere(
+      (p) => p.id == selectedProgId,
+      orElse: () => BreathingProgram.presets.first,
+    );
+    if (selectedProgId == 'custom' && customProg != null) {
+      selected = customProg;
+    }
+
     setState(() {
       _customProgram = customProg;
+      _selectedProgram = selected;
+      _secondsLeft = selected.phases.first.duration;
+      _breathController.duration = Duration(seconds: _secondsLeft);
       _totalCompletedSessions = prefs.getInt('breathing_sessions_total') ?? 0;
       if (lastDateStr == todayStr) {
         _todayCompletedSessions = prefs.getInt('breathing_sessions_today') ?? 0;
@@ -271,11 +283,15 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                 final prog = isCustomProgramCard ? _customProgram! : BreathingProgram.presets[idx];
                 final isSelected = prog.id == _selectedProgram.id;
                 return GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     if (_isRunning) _reset();
                     setState(() {
                       _selectedProgram = prog;
+                      _secondsLeft = prog.phases.first.duration;
+                      _breathController.duration = Duration(seconds: _secondsLeft);
                     });
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('breathing_selected_program_id', prog.id);
                   },
                   child: Container(
                     width: 150,
@@ -663,6 +679,7 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
                         );
                         final prefs = await SharedPreferences.getInstance();
                         await prefs.setString('breathing_custom_program', jsonEncode(custom.toJson()));
+                        await prefs.setString('breathing_selected_program_id', custom.id);
                         if (mounted) {
                           setState(() {
                             _customProgram = custom;
