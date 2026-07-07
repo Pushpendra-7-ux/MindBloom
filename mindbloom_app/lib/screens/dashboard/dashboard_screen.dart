@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -97,6 +98,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
     
     await prefs.setStringList('favorited_quotes', favoritedList);
+  }
+
+  void _shareQuote(Map<String, String> quote) {
+    final text = '"${quote['text']}"'
+        '\n— ${quote['author']}'
+        '\n\n🌸 Shared from MindBloom';
+    Share.share(text);
   }
 
   Future<List<Map<String, String>>> _getSavedQuotes() async {
@@ -600,6 +608,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     onPressed: _showSavedQuotes,
                     tooltip: 'Saved Quotes',
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(
+                      Icons.share_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    onPressed: () => _shareQuote(dailyQuote),
+                    tooltip: 'Share Quote',
                   ),
                   const SizedBox(width: 12),
                   IconButton(
