@@ -235,6 +235,9 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> with TickerPr
   @override
   Widget build(BuildContext context) {
     final phase = _selectedProgram.phases[_currentPhase];
+    final historyState = ref.watch(breathingHistoryProvider);
+    final todayCount = historyState.todaySessions.length;
+    final totalCount = historyState.sessions.length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Breathing Exercise')),
@@ -534,28 +537,51 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> with TickerPr
                   const SizedBox(height: 32),
 
                   // Stats dashboard panel
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardTheme.color,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : Colors.black.withValues(alpha: 0.05),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatItem('Today\'s Sessions', '$_todayCompletedSessions', '🧘'),
-                        Container(
-                          width: 1,
-                          height: 30,
-                          color: Colors.grey.withValues(alpha: 0.2),
+                  GestureDetector(
+                    onTap: _showHistoryBottomSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.05),
                         ),
-                        _buildStatItem('Total Sessions', '$_totalCompletedSessions', '🔥'),
-                      ],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildStatItem('Today\'s Sessions', '$todayCount', '🧘'),
+                              Container(
+                                width: 1,
+                                height: 30,
+                                color: Colors.grey.withValues(alpha: 0.2),
+                              ),
+                              _buildStatItem('Total Sessions', '$totalCount', '🔥'),
+                            ],
+                          ),
+                          const Divider(height: 24, thickness: 0.5),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.history_rounded, size: 16, color: AppColors.primaryPurple),
+                              const SizedBox(width: 6),
+                              Text(
+                                'View Detailed History',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.primaryPurple,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -762,6 +788,248 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> with TickerPr
               '${value}s',
               style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHistoryBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final historyState = ref.watch(breathingHistoryProvider);
+            final sessions = historyState.sessions;
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Text('🌬️', style: TextStyle(fontSize: 22)),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Breathing History',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        if (sessions.isNotEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.error),
+                            tooltip: 'Clear All',
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Clear History'),
+                                  content: const Text('Are you sure you want to clear all breathing history?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('Clear', style: TextStyle(color: AppColors.error)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await ref.read(breathingHistoryProvider.notifier).clearHistory();
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.remove('breathing_sessions_total');
+                                await prefs.remove('breathing_sessions_today');
+                                _loadStats();
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (sessions.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildHistorySummaryItem(context, 'Total Time', historyState.formattedTotalTime, '⏱️'),
+                          _buildHistorySummaryItem(context, 'Active Days', '${historyState.activeDays} days', '📅'),
+                        ],
+                      ),
+                    ),
+                  const Divider(height: 24),
+                  Expanded(
+                    child: sessions.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.history_rounded, size: 48, color: Colors.grey[400]),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No sessions recorded yet',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Complete a session to start tracking!',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            itemCount: sessions.length,
+                            itemBuilder: (context, index) {
+                              final session = sessions[index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardTheme.color,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white.withValues(alpha: 0.08)
+                                        : Colors.black.withValues(alpha: 0.05),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryPurple.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        session.programEmoji,
+                                        style: const TextStyle(fontSize: 20),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            session.programName,
+                                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${session.formattedDuration} • ${session.roundsCompleted} rounds',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  color: AppColors.textSecondary,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            DateFormat('MMM d, h:mm a').format(session.completedAt),
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  color: Colors.grey[500],
+                                                  fontSize: 10,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline_rounded, color: AppColors.textSecondary),
+                                      onPressed: () async {
+                                        await ref.read(breathingHistoryProvider.notifier).removeSession(session.id);
+                                        final prefs = await SharedPreferences.getInstance();
+                                        final totalCount = prefs.getInt('breathing_sessions_total') ?? 0;
+                                        if (totalCount > 0) {
+                                          await prefs.setInt('breathing_sessions_total', totalCount - 1);
+                                        }
+                                        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                                        if (DateFormat('yyyy-MM-dd').format(session.completedAt) == todayStr) {
+                                          final todayCount = prefs.getInt('breathing_sessions_today') ?? 0;
+                                          if (todayCount > 0) {
+                                            await prefs.setInt('breathing_sessions_today', todayCount - 1);
+                                          }
+                                        }
+                                        _loadStats();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildHistorySummaryItem(BuildContext context, String label, String value, String icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.03),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontSize: 10),
+              ),
+            ],
           ),
         ],
       ),
