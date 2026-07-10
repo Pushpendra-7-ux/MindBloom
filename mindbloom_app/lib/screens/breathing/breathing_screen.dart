@@ -1,21 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
 import '../../models/breathing_model.dart';
+import '../../providers/breathing_history_provider.dart';
 import '../../services/haptic_util.dart';
 import '../../widgets/custom_button.dart';
 
-class BreathingScreen extends StatefulWidget {
+class BreathingScreen extends ConsumerStatefulWidget {
   const BreathingScreen({super.key});
 
   @override
-  State<BreathingScreen> createState() => _BreathingScreenState();
+  ConsumerState<BreathingScreen> createState() => _BreathingScreenState();
 }
 
-class _BreathingScreenState extends State<BreathingScreen> with TickerProviderStateMixin {
+class _BreathingScreenState extends ConsumerState<BreathingScreen> with TickerProviderStateMixin {
   late AnimationController _breathController;
   late Animation<double> _sizeAnimation;
   late Animation<double> _opacityAnimation;
@@ -105,6 +107,14 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
       await prefs.setString('breathing_last_date', todayStr);
     }
     await prefs.setInt('breathing_sessions_today', dailyCount);
+
+    // Save to our new BreathingHistoryProvider
+    await ref.read(breathingHistoryProvider.notifier).addSession(
+      programName: _selectedProgram.name,
+      programEmoji: _selectedProgram.emoji,
+      durationSeconds: _selectedProgram.totalDuration * _totalRounds,
+      roundsCompleted: _totalRounds,
+    );
 
     _loadStats();
   }
@@ -232,7 +242,7 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
         children: [
           // Program Selector
           Container(
-            height: 90,
+            height: 100,
             margin: const EdgeInsets.symmetric(vertical: 12),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
