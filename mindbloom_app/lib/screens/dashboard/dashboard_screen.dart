@@ -1082,6 +1082,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  void _prefillGratitudePrompt() {
+    setState(() {
+      _gratitudeController.text = _currentGratitudePrompt;
+      _gratitudeController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _gratitudeController.text.length),
+      );
+    });
+    HapticUtil.selectionClick();
+  }
+
   void _shuffleGratitudePrompt() {
     setState(() {
       _currentGratitudePrompt = GratitudePrompts.getRandomPrompt(_currentGratitudePrompt);
@@ -1107,29 +1117,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const Text('💡', style: TextStyle(fontSize: 16)),
             const SizedBox(width: 8),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'PROMPT SUGGESTION',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.warmAmber,
-                          letterSpacing: 0.5,
-                        ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _currentGratitudePrompt,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.textPrimary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                  ),
-                ],
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _prefillGratitudePrompt,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PROMPT SUGGESTION (TAP TO USE)',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.warmAmber,
+                            letterSpacing: 0.5,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _currentGratitudePrompt,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 8),
