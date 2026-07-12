@@ -57,6 +57,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 50));
 
       await notifier.add('first');
+      await Future.delayed(const Duration(milliseconds: 2));
       await notifier.add('second');
       expect(notifier.state.entries.length, equals(2));
       expect(notifier.state.entries[0].text, equals('second'));
@@ -68,6 +69,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 50));
 
       await notifier.add('to keep');
+      await Future.delayed(const Duration(milliseconds: 2));
       await notifier.add('to remove');
 
       final removeId = notifier.state.entries.first.id; // 'to remove'
