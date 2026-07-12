@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
 import '../../config/daily_quotes.dart';
+import '../../config/gratitude_prompts.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/water_provider.dart';
@@ -23,10 +24,12 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _isQuoteFavorited = false;
   final _gratitudeController = TextEditingController();
+  String _currentGratitudePrompt = '';
 
   @override
   void initState() {
     super.initState();
+    _currentGratitudePrompt = GratitudePrompts.getTodayPrompt();
     Future.microtask(() {
       ref.read(moodProvider.notifier).fetchLatestMood();
       ref.read(moodProvider.notifier).fetchWeeklyData();
@@ -1024,6 +1027,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
           ),
 
+          // Prompts suggestion section
+          _buildGratitudePromptSection(context),
+
           // Input row
           const Divider(height: 1),
           Padding(
@@ -1072,6 +1078,71 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _shuffleGratitudePrompt() {
+    setState(() {
+      _currentGratitudePrompt = GratitudePrompts.getRandomPrompt(_currentGratitudePrompt);
+    });
+    HapticUtil.selectionClick();
+  }
+
+  Widget _buildGratitudePromptSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.warmAmber.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.warmAmber.withValues(alpha: 0.15),
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Text('💡', style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PROMPT SUGGESTION',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.warmAmber,
+                          letterSpacing: 0.5,
+                        ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _currentGratitudePrompt,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.textPrimary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: _shuffleGratitudePrompt,
+              icon: const Icon(Icons.casino_outlined, size: 18),
+              color: AppColors.warmAmber,
+              tooltip: 'Shuffle prompt',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
       ),
     );
   }
