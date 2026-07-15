@@ -16,6 +16,7 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedFilter = 'all'; // 'all', 'positive', 'neutral', 'negative'
+  final Set<int> _expandedJournals = {};
 
   @override
   void initState() {
@@ -172,7 +173,7 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
                                   ],
                                   if (log.journal.isNotEmpty) ...[
                                     const SizedBox(height: 10),
-                                    Text(log.journal, style: Theme.of(context).textTheme.bodySmall, maxLines: 3, overflow: TextOverflow.ellipsis),
+                                    _buildExpandableJournal(log.journal, index),
                                   ],
                                   const SizedBox(height: 10),
                                   Row(
@@ -271,6 +272,53 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(text, style: const TextStyle(fontSize: 11)),
+    );
+  }
+
+  Widget _buildExpandableJournal(String journal, int index) {
+    final isLong = journal.length > 120;
+    final isExpanded = _expandedJournals.contains(index);
+
+    if (!isLong) {
+      return Text(journal, style: Theme.of(context).textTheme.bodySmall);
+    }
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedJournals.remove(index);
+          } else {
+            _expandedJournals.add(index);
+          }
+        });
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AnimatedCrossFade(
+            firstChild: Text(
+              '${journal.substring(0, 120)}...',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            secondChild: Text(
+              journal,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isExpanded ? 'Show less' : 'Read more',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.primaryPurple,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
