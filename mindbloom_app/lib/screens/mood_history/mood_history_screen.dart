@@ -102,11 +102,28 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
                     const SizedBox(height: 8),
                     // List
                     Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: moodState.history.length,
-                        itemBuilder: (context, index) {
-                          final log = moodState.history[index];
+                      child: Builder(
+                        builder: (context) {
+                          final filteredLogs = moodState.history.where((log) {
+                            // Category filter
+                            if (_selectedFilter == 'positive' && log.moodScore < 8) return false;
+                            if (_selectedFilter == 'neutral' && (log.moodScore < 4 || log.moodScore > 7)) return false;
+                            if (_selectedFilter == 'negative' && log.moodScore > 3) return false;
+
+                            // Search filter
+                            if (_searchQuery.isNotEmpty) {
+                              final journalMatch = log.journal.toLowerCase().contains(_searchQuery);
+                              final feelingsMatch = log.feelings.any((f) => f.toLowerCase().contains(_searchQuery));
+                              if (!journalMatch && !feelingsMatch) return false;
+                            }
+                            return true;
+                          }).toList();
+
+                          return ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filteredLogs.length,
+                            itemBuilder: (context, index) {
+                              final log = filteredLogs[index];
                           final date = log.createdAt;
                           final dateStr = date != null
                               ? DateFormat('MMM d, y • h:mm a').format(date)
@@ -170,6 +187,8 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
                                 ],
                               ),
                             ),
+                          );
+                            },
                           );
                         },
                       ),
