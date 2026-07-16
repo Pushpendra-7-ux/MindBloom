@@ -423,6 +423,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           context, 'Appointments', Icons.calendar_today_rounded,
                           AppColors.blueGradient, () => context.push('/appointments'),
                         ),
+                        _buildWellnessCard(
+                          context, 'Affirmations', Icons.auto_awesome_rounded,
+                          const LinearGradient(
+                            colors: [AppColors.coral, Color(0xFFE87D5E)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          () => context.push('/affirmations'),
+                        ),
                       ],
                     );
                   }

@@ -16,6 +16,7 @@ import '../screens/mood_history/mood_history_screen.dart';
 import '../screens/appointments/appointments_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/affirmations/affirmations_screen.dart';
 import '../widgets/app_shell.dart';
 
 // Listenable that notifies when auth state changes
@@ -145,6 +146,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/appointments',
         builder: (context, state) => const AppointmentsScreen(),
+      ),
+      GoRoute(
+        path: '/affirmations',
+        builder: (context, state) => const AffirmationsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
