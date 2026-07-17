@@ -120,6 +120,57 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
                             return true;
                           }).toList();
 
+                          if (filteredLogs.isEmpty) {
+                            return Center(
+                              child: SingleChildScrollView(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text('🔍', style: TextStyle(fontSize: 48)),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No matching results',
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Try adjusting your search query or changing filters.',
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              color: Colors.grey,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() {
+                                            _searchQuery = '';
+                                            _selectedFilter = 'all';
+                                          });
+                                        },
+                                        icon: const Icon(Icons.refresh),
+                                        label: const Text('Reset Search & Filters'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.primaryPurple,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
                           return ListView.builder(
                             padding: const EdgeInsets.all(16),
                             itemCount: filteredLogs.length,
