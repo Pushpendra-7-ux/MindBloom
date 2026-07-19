@@ -1679,6 +1679,100 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _showAllNotesSheet() {
-    // Stub to be implemented in Commit 3
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final notesState = ref.watch(notesProvider);
+            final notes = notesState.notes;
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.65,
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        const Text('📝', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Quick Notes History',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: notes.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.note_alt_outlined, size: 48, color: Colors.grey[400]),
+                                const SizedBox(height: 12),
+                                Text('No notes saved yet', style: Theme.of(context).textTheme.bodyMedium),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: notes.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final note = notes[index];
+                              final formattedDateTime = DateFormat('MMM d, y • h:mm a').format(note.createdAt);
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                title: Text(
+                                  note.text,
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                                subtitle: Text(
+                                  formattedDateTime,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary.withValues(alpha: 0.6),
+                                      ),
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                                  color: Colors.redAccent,
+                                  tooltip: 'Delete note',
+                                  onPressed: () async {
+                                    await ref.read(notesProvider.notifier).deleteNote(note.id);
+                                    setSheetState(() {});
+                                    HapticUtil.lightImpact();
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
