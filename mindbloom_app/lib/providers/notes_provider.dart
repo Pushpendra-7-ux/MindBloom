@@ -73,7 +73,7 @@ class NotesNotifier extends StateNotifier<NotesState> {
 
   Future<void> addNote(String text) async {
     final note = QuickNote(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '${DateTime.now().millisecondsSinceEpoch}_${state.notes.length}',
       text: text.trim(),
       createdAt: DateTime.now(),
     );
