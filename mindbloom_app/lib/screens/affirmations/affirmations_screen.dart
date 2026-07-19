@@ -108,6 +108,11 @@ class _AffirmationsScreenState extends ConsumerState<AffirmationsScreen>
         title: const Text('Daily Affirmations'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.add_rounded),
+            tooltip: 'Create Custom Affirmation',
+            onPressed: () => _showCreateAffirmationSheet(context, notifier),
+          ),
+          IconButton(
             icon: const Icon(Icons.bookmark_rounded),
             tooltip: 'Saved Affirmations',
             onPressed: () => _showSavedSheet(context, notifier),
@@ -306,6 +311,156 @@ class _AffirmationsScreenState extends ConsumerState<AffirmationsScreen>
           Text(label, style: Theme.of(context).textTheme.labelSmall),
         ],
       ),
+    );
+  }
+
+  void _showCreateAffirmationSheet(BuildContext context, AffirmationNotifier notifier) {
+    final textController = TextEditingController();
+    String selectedCategory = DailyAffirmations.categories.first;
+    final formKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        const Text('✨', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Create Your Affirmation',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text('Choose a Category', style: Theme.of(context).textTheme.labelLarge),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: DailyAffirmations.categories.map((cat) {
+                        final isSelected = selectedCategory == cat;
+                        return ChoiceChip(
+                          label: Text(cat),
+                          selected: isSelected,
+                          onSelected: (_) => setSheetState(() => selectedCategory = cat),
+                          selectedColor: _categoryColor(cat).withValues(alpha: 0.18),
+                          checkmarkColor: _categoryColor(cat),
+                          labelStyle: TextStyle(
+                            color: isSelected ? _categoryColor(cat) : null,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    Text('Your Affirmation', style: Theme.of(context).textTheme.labelLarge),
+                    const SizedBox(height: 8),
+                    Form(
+                      key: formKey,
+                      child: TextFormField(
+                        controller: textController,
+                        maxLines: 4,
+                        maxLength: 150,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. I am capable of creating the life I desire.',
+                          filled: true,
+                          fillColor: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white.withValues(alpha: 0.06)
+                              : Colors.grey.withValues(alpha: 0.07),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.all(14),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please write an affirmation.';
+                          }
+                          if (value.trim().length < 10) {
+                            return 'Affirmation must be at least 10 characters.';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.auto_awesome_rounded),
+                        label: const Text('Save Affirmation'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryPurple,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () async {
+                          if (formKey.currentState!.validate()) {
+                            await notifier.addCustomAffirmation(
+                              textController.text,
+                              selectedCategory,
+                            );
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Text('✨'),
+                                      const SizedBox(width: 8),
+                                      const Expanded(child: Text('Custom affirmation saved!')),
+                                    ],
+                                  ),
+                                  backgroundColor: AppColors.primaryPurple,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
