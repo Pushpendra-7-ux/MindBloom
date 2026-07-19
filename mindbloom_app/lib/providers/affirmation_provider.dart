@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/daily_affirmations.dart';
@@ -39,29 +40,39 @@ class AffirmationState {
 
 class AffirmationNotifier extends StateNotifier<AffirmationState> {
   static const _favKey = 'favorited_affirmations';
+  static const _customKey = 'custom_affirmations';
+
+  List<Map<String, String>> _allAffirmations = [];
 
   AffirmationNotifier() : super(const AffirmationState()) {
     _init();
   }
 
   Future<void> _init() async {
-    final all = DailyAffirmations.getAll();
+    final predefined = DailyAffirmations.getAll();
     final prefs = await SharedPreferences.getInstance();
+    
+    // Load custom affirmations
+    final customRaw = prefs.getStringList(_customKey) ?? [];
+    final custom = customRaw.map((raw) => Map<String, String>.from(jsonDecode(raw))).toList();
+
+    _allAffirmations = [...predefined, ...custom];
+
     final saved = prefs.getStringList(_favKey) ?? [];
     final favIndices = <int>{};
     for (final raw in saved) {
       final idx = int.tryParse(raw);
-      if (idx != null && idx >= 0 && idx < all.length) {
+      if (idx != null && idx >= 0 && idx < _allAffirmations.length) {
         favIndices.add(idx);
       }
     }
 
     // Start on today's affirmation
     final today = DailyAffirmations.getTodayAffirmation();
-    final todayIndex = all.indexWhere((a) => a['text'] == today['text']);
+    final todayIndex = _allAffirmations.indexWhere((a) => a['text'] == today['text']);
 
     state = AffirmationState(
-      affirmations: all,
+      affirmations: _allAffirmations,
       currentIndex: todayIndex >= 0 ? todayIndex : 0,
       favoriteIndices: favIndices,
     );
@@ -86,13 +97,13 @@ class AffirmationNotifier extends StateNotifier<AffirmationState> {
   void filterByCategory(String? category) {
     if (category == null) {
       state = AffirmationState(
-        affirmations: DailyAffirmations.getAll(),
+        affirmations: _allAffirmations,
         currentIndex: 0,
         favoriteIndices: state.favoriteIndices,
       );
     } else {
       state = state.copyWith(
-        affirmations: DailyAffirmations.getByCategory(category),
+        affirmations: _allAffirmations.where((a) => a['category'] == category).toList(),
         currentIndex: 0,
         activeCategory: category,
       );
@@ -103,8 +114,7 @@ class AffirmationNotifier extends StateNotifier<AffirmationState> {
   Future<void> toggleFavorite() async {
     // Find the global index (in case we're filtered)
     final currentText = state.current['text'];
-    final allAffirmations = DailyAffirmations.getAll();
-    final globalIdx = allAffirmations.indexWhere((a) => a['text'] == currentText);
+    final globalIdx = _allAffirmations.indexWhere((a) => a['text'] == currentText);
     if (globalIdx < 0) return;
 
     final favs = Set<int>.from(state.favoriteIndices);
@@ -122,11 +132,75 @@ class AffirmationNotifier extends StateNotifier<AffirmationState> {
 
   /// Get all favorited affirmation texts.
   List<Map<String, String>> getFavorites() {
-    final all = DailyAffirmations.getAll();
     return state.favoriteIndices
-        .where((i) => i < all.length)
-        .map((i) => all[i])
+        .where((i) => i < _allAffirmations.length)
+        .map((i) => _allAffirmations[i])
         .toList();
+  }
+
+  /// Add a custom user affirmation.
+  Future<void> addCustomAffirmation(String text, String category) async {
+    final prefs = await SharedPreferences.getInstance();
+    final customRaw = prefs.getStringList(_customKey) ?? [];
+    
+    final newCustom = {
+      'text': text.trim(),
+      'category': category,
+      'isCustom': 'true',
+    };
+    
+    customRaw.add(jsonEncode(newCustom));
+    await prefs.setStringList(_customKey, customRaw);
+
+    // Re-load all affirmations
+    await _init();
+
+    // Find the index of this new affirmation in _allAffirmations
+    final newIdx = _allAffirmations.indexWhere((a) => a['text'] == newCustom['text']);
+    if (newIdx >= 0) {
+      // Favorite it automatically
+      final favs = Set<int>.from(state.favoriteIndices);
+      favs.add(newIdx);
+      state = state.copyWith(
+        favoriteIndices: favs,
+        currentIndex: newIdx,
+        clearCategory: true,
+      );
+      
+      await prefs.setStringList(_favKey, favs.map((i) => i.toString()).toList());
+    }
+  }
+
+  /// Delete a custom user affirmation.
+  Future<void> deleteCustomAffirmation(String text) async {
+    final prefs = await SharedPreferences.getInstance();
+    final customRaw = prefs.getStringList(_customKey) ?? [];
+    final updatedCustom = <String>[];
+    for (final raw in customRaw) {
+      final map = Map<String, String>.from(jsonDecode(raw));
+      if (map['text'] != text) {
+        updatedCustom.add(raw);
+      }
+    }
+    await prefs.setStringList(_customKey, updatedCustom);
+
+    // Rebuild the favorites list by mapping remaining items
+    final remainingCustom = updatedCustom.map((raw) => Map<String, String>.from(jsonDecode(raw))).toList();
+    final predefined = DailyAffirmations.getAll();
+    final combined = [...predefined, ...remainingCustom];
+
+    // Find the current favorites and filter out the deleted one
+    final currentFavs = getFavorites().where((f) => f['text'] != text).toList();
+    final newFavIndices = <int>{};
+    for (final fav in currentFavs) {
+      final idx = combined.indexWhere((a) => a['text'] == fav['text']);
+      if (idx >= 0) {
+        newFavIndices.add(idx);
+      }
+    }
+
+    await prefs.setStringList(_favKey, newFavIndices.map((i) => i.toString()).toList());
+    await _init();
   }
 }
 
