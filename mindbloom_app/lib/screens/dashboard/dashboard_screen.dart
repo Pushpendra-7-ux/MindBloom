@@ -11,6 +11,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/water_provider.dart';
 import '../../providers/gratitude_provider.dart';
+import '../../providers/notes_provider.dart';
+import 'package:intl/intl.dart';
 import '../../services/haptic_util.dart';
 import '../../widgets/custom_card.dart';
 
@@ -25,6 +27,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _isQuoteFavorited = false;
   final _gratitudeController = TextEditingController();
   String _currentGratitudePrompt = '';
+  final _notesController = TextEditingController();
 
   @override
   void initState() {
@@ -40,6 +43,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void dispose() {
     _gratitudeController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -444,6 +448,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                 // Gratitude Journal Card
                 _buildGratitudeCard(context),
+                const SizedBox(height: 24),
+
+                // Quick Notes Card
+                _buildQuickNotesCard(context),
                 const SizedBox(height: 24),
 
                 // Weekly mood chart
@@ -1468,5 +1476,209 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
       },
     );
+  }
+
+  Widget _buildQuickNotesCard(BuildContext context) {
+    final notesState = ref.watch(notesProvider);
+    final notes = notesState.notes;
+    final displayNotes = notes.take(3).toList();
+
+    return CustomCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: const BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                const Text('📝', style: TextStyle(fontSize: 26)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Quick Notes',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Jot down thoughts or reminders',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (notes.length > 3)
+                  IconButton(
+                    onPressed: _showAllNotesSheet,
+                    icon: const Icon(Icons.menu_open_rounded, color: Colors.white, size: 22),
+                    tooltip: 'See all notes',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+              ],
+            ),
+          ),
+
+          // Notes List Preview
+          if (notes.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Center(
+                child: Column(
+                  children: [
+                    Text(
+                      'No notes yet',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Capture your fleeting thoughts here.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary.withValues(alpha: 0.7),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: displayNotes.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final note = displayNotes[index];
+                final formattedTime = DateFormat('h:mm a').format(note.createdAt);
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : Colors.grey.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              note.text,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              formattedTime,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 10,
+                                    color: AppColors.textSecondary.withValues(alpha: 0.6),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          ref.read(notesProvider.notifier).deleteNote(note.id);
+                          HapticUtil.lightImpact();
+                        },
+                        child: const Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+          // Input field row
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _notesController,
+                    textCapitalization: TextCapitalization.sentences,
+                    maxLength: 200,
+                    decoration: InputDecoration(
+                      hintText: 'Type a quick note...',
+                      hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                      counterText: '',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.primaryPurple.withValues(alpha: 0.3)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.primaryPurple.withValues(alpha: 0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.primaryPurple, width: 1.5),
+                      ),
+                    ),
+                    onSubmitted: (_) => _submitNote(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _submitNote,
+                  icon: const Icon(Icons.add_circle_rounded),
+                  color: AppColors.primaryPurple,
+                  iconSize: 32,
+                  tooltip: 'Save note',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitNote() {
+    final text = _notesController.text.trim();
+    if (text.isEmpty) return;
+    ref.read(notesProvider.notifier).addNote(text);
+    _notesController.clear();
+    HapticUtil.mediumImpact();
+  }
+
+  void _showAllNotesSheet() {
+    // Stub to be implemented in Commit 3
   }
 }
