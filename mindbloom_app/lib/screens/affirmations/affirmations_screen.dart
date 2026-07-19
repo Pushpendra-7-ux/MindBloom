@@ -465,90 +465,127 @@ class _AffirmationsScreenState extends ConsumerState<AffirmationsScreen>
   }
 
   void _showSavedSheet(BuildContext context, AffirmationNotifier notifier) {
-    final favorites = notifier.getFavorites();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.65,
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[400],
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final favorites = notifier.getFavorites();
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.65,
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    const Text('🔖', style: TextStyle(fontSize: 22)),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Saved Affirmations',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: favorites.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.bookmark_border_rounded,
-                                size: 48, color: Colors.grey[400]),
-                            const SizedBox(height: 12),
-                            Text('No saved affirmations yet',
-                                style: Theme.of(context).textTheme.bodyMedium),
-                            const SizedBox(height: 4),
-                            Text('Tap the bookmark icon to save your favourites',
-                                style: Theme.of(context).textTheme.bodySmall),
-                          ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        const Text('🔖', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Saved Affirmations',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: favorites.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final aff = favorites[index];
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            leading: Icon(
-                              _categoryIcon(aff['category'] ?? ''),
-                              color: _categoryColor(aff['category'] ?? ''),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: favorites.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.bookmark_border_rounded,
+                                    size: 48, color: Colors.grey[400]),
+                                const SizedBox(height: 12),
+                                Text('No saved affirmations yet',
+                                    style: Theme.of(context).textTheme.bodyMedium),
+                                const SizedBox(height: 4),
+                                Text('Tap the bookmark icon to save your favourites',
+                                    style: Theme.of(context).textTheme.bodySmall),
+                              ],
                             ),
-                            title: Text(
-                              aff['text'] ?? '',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            subtitle: Text(aff['category'] ?? ''),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.share_rounded, size: 20),
-                              onPressed: () => _shareAffirmation(
-                                  aff['text'] ?? '', aff['category'] ?? ''),
-                            ),
-                          );
-                        },
-                      ),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: favorites.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final aff = favorites[index];
+                              final isCustom = aff['isCustom'] == 'true';
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                leading: Icon(
+                                  _categoryIcon(aff['category'] ?? ''),
+                                  color: _categoryColor(aff['category'] ?? ''),
+                                ),
+                                title: Text(
+                                  aff['text'] ?? '',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                                subtitle: Row(
+                                  children: [
+                                    Text(aff['category'] ?? ''),
+                                    if (isCustom) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryPurple.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          '✦ Custom',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppColors.primaryPurple,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                trailing: isCustom
+                                    ? IconButton(
+                                        icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                                        color: Colors.redAccent,
+                                        tooltip: 'Delete custom affirmation',
+                                        onPressed: () async {
+                                          await notifier.deleteCustomAffirmation(aff['text'] ?? '');
+                                          setSheetState(() {});
+                                        },
+                                      )
+                                    : IconButton(
+                                        icon: const Icon(Icons.share_rounded, size: 20),
+                                        onPressed: () => _shareAffirmation(
+                                            aff['text'] ?? '', aff['category'] ?? ''),
+                                      ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
