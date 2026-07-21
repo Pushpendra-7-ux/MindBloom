@@ -12,6 +12,8 @@ import '../../providers/mood_provider.dart';
 import '../../providers/water_provider.dart';
 import '../../providers/gratitude_provider.dart';
 import '../../providers/notes_provider.dart';
+import '../../providers/tips_provider.dart';
+import '../../config/wellness_tips.dart';
 import 'package:intl/intl.dart';
 import '../../services/haptic_util.dart';
 import '../../widgets/custom_card.dart';
@@ -342,6 +344,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 // Greeting card
                 _buildGreetingCard(context, user?.name ?? 'Friend'),
+                const SizedBox(height: 20),
+
+                // Daily Wellness Tip Card
+                _buildWellnessTipCard(context),
                 const SizedBox(height: 20),
 
                 // Streak & Mood badge row
@@ -1676,6 +1682,129 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.read(notesProvider.notifier).addNote(text);
     _notesController.clear();
     HapticUtil.mediumImpact();
+  }
+
+  Widget _buildWellnessTipCard(BuildContext context) {
+    final tipsState = ref.watch(tipsProvider);
+    final tipsNotifier = ref.read(tipsProvider.notifier);
+    final currentTip = tipsState.currentTip;
+    final isSaved = tipsNotifier.isSaved(tipsState.currentIndex);
+    final categoryIcon = WellnessTips.getIcon(currentTip['category'] ?? '');
+
+    return CustomCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.softGreen.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(categoryIcon, style: const TextStyle(fontSize: 14)),
+                    const SizedBox(width: 6),
+                    Text(
+                      currentTip['category'] ?? 'Wellness',
+                      style: const TextStyle(
+                        color: AppColors.softGreen,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                      color: isSaved ? AppColors.softGreen : AppColors.textSecondary,
+                      size: 22,
+                    ),
+                    tooltip: isSaved ? 'Remove bookmark' : 'Bookmark tip',
+                    onPressed: () {
+                      tipsNotifier.toggleSave(tipsState.currentIndex);
+                      HapticUtil.lightImpact();
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 14),
+                  IconButton(
+                    icon: const Icon(Icons.share_rounded, size: 20, color: AppColors.textSecondary),
+                    tooltip: 'Share tip',
+                    onPressed: () {
+                      Share.share(
+                        '💡 Daily Wellness Tip: "${currentTip['text']}" — MindBloom App',
+                      );
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 14),
+                  IconButton(
+                    icon: const Icon(Icons.bookmarks_rounded, size: 20, color: AppColors.textSecondary),
+                    tooltip: 'Saved Tips',
+                    onPressed: _showSavedTipsSheet,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            currentTip['text'] ?? '',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.4,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerRight,
+            child: InkWell(
+              onTap: () {
+                tipsNotifier.nextTip();
+                HapticUtil.selectionClick();
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Next Tip',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.primaryPurple,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primaryPurple),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSavedTipsSheet() {
+    // Stub to be implemented in Commit 4
   }
 
   void _showAllNotesSheet() {
