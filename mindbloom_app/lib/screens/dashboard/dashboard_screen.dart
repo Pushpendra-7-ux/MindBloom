@@ -1804,7 +1804,127 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _showSavedTipsSheet() {
-    // Stub to be implemented in Commit 4
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final tipsNotifier = ref.read(tipsProvider.notifier);
+            final savedIndices = tipsNotifier.getSavedIndices();
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.65,
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        const Text('💡', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Saved Wellness Tips',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: savedIndices.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.bookmark_border_rounded, size: 48, color: Colors.grey[400]),
+                                const SizedBox(height: 12),
+                                Text('No saved tips yet', style: Theme.of(context).textTheme.bodyMedium),
+                                const SizedBox(height: 4),
+                                Text('Tap the bookmark icon on any tip to save it',
+                                    style: Theme.of(context).textTheme.bodySmall),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: savedIndices.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final tipIndex = savedIndices[index];
+                              final tip = WellnessTips.getTipAt(tipIndex);
+                              final categoryIcon = WellnessTips.getIcon(tip['category'] ?? '');
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                leading: Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.softGreen.withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(categoryIcon, style: const TextStyle(fontSize: 18)),
+                                  ),
+                                ),
+                                title: Text(
+                                  tip['text'] ?? '',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                                subtitle: Text(
+                                  tip['category'] ?? '',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: AppColors.softGreen,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.share_rounded, size: 18),
+                                      onPressed: () {
+                                        Share.share('💡 Daily Wellness Tip: "${tip['text']}" — MindBloom App');
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.bookmark_remove_rounded, size: 20),
+                                      color: Colors.redAccent,
+                                      tooltip: 'Remove bookmark',
+                                      onPressed: () async {
+                                        await tipsNotifier.toggleSave(tipIndex);
+                                        setSheetState(() {});
+                                        HapticUtil.lightImpact();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showAllNotesSheet() {
