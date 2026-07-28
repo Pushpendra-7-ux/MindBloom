@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/constants.dart';
 import '../config/theme.dart';
+import '../providers/sos_contacts_provider.dart';
 
-class SOSOverlay extends StatefulWidget {
+class SOSOverlay extends ConsumerStatefulWidget {
   const SOSOverlay({super.key});
 
   @override
-  State<SOSOverlay> createState() => _SOSOverlayState();
+  ConsumerState<SOSOverlay> createState() => _SOSOverlayState();
 }
 
-class _SOSOverlayState extends State<SOSOverlay> with TickerProviderStateMixin {
+class _SOSOverlayState extends ConsumerState<SOSOverlay> with TickerProviderStateMixin {
   late AnimationController _breathController;
   late Animation<double> _breathAnimation;
 
@@ -127,17 +129,26 @@ class _SOSOverlayState extends State<SOSOverlay> with TickerProviderStateMixin {
                     _sendWhatsApp,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
                   child: _quickAction(
                     context,
                     Icons.local_hospital_rounded,
-                    'Nearby Doctor',
+                    'Doctor',
                     AppColors.calmBlue,
                     () {
                       Navigator.pop(context);
-                      // Navigate to nearby
                     },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _quickAction(
+                    context,
+                    Icons.person_add_rounded,
+                    'Add Contact',
+                    AppColors.primaryPurple,
+                    () => _showAddContactDialog(context),
                   ),
                 ),
               ],
@@ -209,6 +220,115 @@ class _SOSOverlayState extends State<SOSOverlay> with TickerProviderStateMixin {
           ],
         ),
       ),
+    );
+  }
+
+  void _showAddContactDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final numberController = TextEditingController();
+    final relationController = TextEditingController(text: 'Personal');
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Text('👤', style: TextStyle(fontSize: 20)),
+              SizedBox(width: 8),
+              Text('Add Personal Contact'),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Contact Name',
+                      hintText: 'e.g. Dr. Sarah / Mom',
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) {
+                        return 'Please enter a name';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: numberController,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number',
+                      hintText: 'e.g. 9876543210',
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) {
+                        return 'Please enter a phone number';
+                      }
+                      if (val.trim().length < 5) {
+                        return 'Enter a valid phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: relationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Relation / Note',
+                      hintText: 'e.g. Therapist, Family, Doctor',
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  await ref.read(sosContactsProvider.notifier).addContact(
+                        name: nameController.text,
+                        number: numberController.text,
+                        relation: relationController.text.isNotEmpty
+                            ? relationController.text
+                            : 'Personal',
+                      );
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Emergency contact added! 💛'),
+                        backgroundColor: AppColors.primaryPurple,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryPurple,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
