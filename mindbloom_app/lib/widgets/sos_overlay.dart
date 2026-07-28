@@ -50,6 +50,9 @@ class _SOSOverlayState extends ConsumerState<SOSOverlay> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final customContactsState = ref.watch(sosContactsProvider);
+    final customContacts = customContactsState.contacts;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
@@ -157,13 +160,81 @@ class _SOSOverlayState extends ConsumerState<SOSOverlay> with TickerProviderStat
 
           const SizedBox(height: 20),
 
-          // Helpline numbers
+          // Helpline & Custom Contacts List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: AppConstants.helplines.length,
+              itemCount: customContacts.length + AppConstants.helplines.length,
               itemBuilder: (context, index) {
-                final helpline = AppConstants.helplines[index];
+                if (index < customContacts.length) {
+                  final contact = customContacts[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardTheme.color,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primaryPurple.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: ListTile(
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0x1A7F77DD),
+                        child: Icon(Icons.person, color: AppColors.primaryPurple, size: 20),
+                      ),
+                      title: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              contact.name,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryPurple.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              contact.relation,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.primaryPurple,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      subtitle: Text(
+                        contact.number,
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.call, color: AppColors.softGreen),
+                            onPressed: () => _makeCall(contact.number),
+                            tooltip: 'Call contact',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                            onPressed: () => ref.read(sosContactsProvider.notifier).deleteContact(contact.id),
+                            tooltip: 'Delete contact',
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final helplineIndex = index - customContacts.length;
+                final helpline = AppConstants.helplines[helplineIndex];
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
