@@ -1,20 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
 import '../../models/meditation_model.dart';
+import '../../providers/meditation_favorites_provider.dart';
 import '../../widgets/custom_card.dart';
 
-class MeditationScreen extends StatefulWidget {
+class MeditationScreen extends ConsumerStatefulWidget {
   const MeditationScreen({super.key});
 
   @override
-  State<MeditationScreen> createState() => _MeditationScreenState();
+  ConsumerState<MeditationScreen> createState() => _MeditationScreenState();
 }
 
-class _MeditationScreenState extends State<MeditationScreen> with TickerProviderStateMixin {
+class _MeditationScreenState extends ConsumerState<MeditationScreen> with TickerProviderStateMixin {
   int _selectedIndex = -1;
   bool _isPlaying = false;
   double _progress = 0;
@@ -105,6 +107,8 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final favState = ref.watch(meditationFavoritesProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Meditation')),
       body: SingleChildScrollView(
@@ -198,6 +202,8 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
               itemCount: _sessions.length,
               itemBuilder: (context, index) {
                 final session = _sessions[index];
+                final title = session['title'] as String;
+                final isFav = favState.favoriteTitles.contains(title);
                 final isActive = _selectedIndex == index;
                 return GestureDetector(
                   onTap: () async {
@@ -245,10 +251,29 @@ class _MeditationScreenState extends State<MeditationScreen> with TickerProvider
                             ],
                           ),
                         ),
-                        Icon(
-                          isActive && _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                          color: session['color'] as Color,
-                          size: 36,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                color: isFav ? Colors.redAccent : AppColors.textSecondary,
+                                size: 22,
+                              ),
+                              tooltip: isFav ? 'Remove from favorites' : 'Add to favorites',
+                              onPressed: () {
+                                ref
+                                    .read(meditationFavoritesProvider.notifier)
+                                    .toggleFavorite(title);
+                              },
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              isActive && _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                              color: session['color'] as Color,
+                              size: 36,
+                            ),
+                          ],
                         ),
                       ],
                     ),
