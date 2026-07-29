@@ -25,6 +25,7 @@ class _MeditationScreenState extends ConsumerState<MeditationScreen> with Ticker
   final AudioPlayer _audioPlayer = AudioPlayer();
   final AudioPlayer _ambientPlayer = AudioPlayer();
   double _ambientVolume = 0.5;
+  bool _showFavoritesOnly = false;
 
   // Custom Timer State Variables
   bool _isCustomMode = false;
@@ -193,18 +194,72 @@ class _MeditationScreenState extends ConsumerState<MeditationScreen> with Ticker
                 const SizedBox(height: 24),
               ],
 
-              // Sessions
-            Text('Sessions', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _sessions.length,
-              itemBuilder: (context, index) {
-                final session = _sessions[index];
-                final title = session['title'] as String;
-                final isFav = favState.favoriteTitles.contains(title);
-                final isActive = _selectedIndex == index;
+                // Sessions header & Favorites Filter
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Sessions', style: Theme.of(context).textTheme.headlineSmall),
+                  FilterChip(
+                    selected: _showFavoritesOnly,
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _showFavoritesOnly ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          size: 16,
+                          color: _showFavoritesOnly ? Colors.redAccent : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('Favorites'),
+                      ],
+                    ),
+                    onSelected: (selected) {
+                      setState(() {
+                        _showFavoritesOnly = selected;
+                      });
+                    },
+                    selectedColor: Colors.redAccent.withValues(alpha: 0.15),
+                    checkmarkColor: Colors.redAccent,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_showFavoritesOnly &&
+                  _sessions
+                      .where((s) => favState.favoriteTitles.contains(s['title'] as String))
+                      .isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.favorite_border_rounded, size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 12),
+                        Text('No favorite sessions yet', style: Theme.of(context).textTheme.bodyMedium),
+                        const SizedBox(height: 4),
+                        Text('Tap the heart icon on any session to bookmark it',
+                            style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Builder(
+                  builder: (context) {
+                    final displayedSessions = _showFavoritesOnly
+                        ? _sessions
+                            .where((s) => favState.favoriteTitles.contains(s['title'] as String))
+                            .toList()
+                        : _sessions;
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: displayedSessions.length,
+                      itemBuilder: (context, index) {
+                        final session = displayedSessions[index];
+                        final title = session['title'] as String;
+                        final isFav = favState.favoriteTitles.contains(title);
+                        final isActive = _selectedIndex == _sessions.indexOf(session);
                 return GestureDetector(
                   onTap: () async {
                     setState(() {
@@ -280,7 +335,9 @@ class _MeditationScreenState extends ConsumerState<MeditationScreen> with Ticker
                   ),
                 );
               },
-            ),
+            );
+          },
+        ),
             const SizedBox(height: 24),
 
             // Ambient sounds
