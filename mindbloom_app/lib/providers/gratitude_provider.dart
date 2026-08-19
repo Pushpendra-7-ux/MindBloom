@@ -12,17 +12,34 @@ class GratitudeEntry {
   final String id;
   final String text;
   final DateTime createdAt;
+  final bool isFavorite;
 
   GratitudeEntry({
     required this.id,
     required this.text,
     required this.createdAt,
+    this.isFavorite = false,
   });
+
+  GratitudeEntry copyWith({
+    String? id,
+    String? text,
+    DateTime? createdAt,
+    bool? isFavorite,
+  }) {
+    return GratitudeEntry(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      createdAt: createdAt ?? this.createdAt,
+      isFavorite: isFavorite ?? this.isFavorite,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'text': text,
         'createdAt': createdAt.toIso8601String(),
+        'isFavorite': isFavorite,
       };
 
   factory GratitudeEntry.fromJson(Map<String, dynamic> json) {
@@ -30,6 +47,7 @@ class GratitudeEntry {
       id: json['id'] as String,
       text: json['text'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      isFavorite: json['isFavorite'] as bool? ?? false,
     );
   }
 }
@@ -63,6 +81,11 @@ class GratitudeState {
     return entries
         .where((e) => DateFormat('yyyy-MM-dd').format(e.createdAt) == today)
         .toList();
+  }
+
+  /// Entries marked as favorites.
+  List<GratitudeEntry> get favoriteEntries {
+    return entries.where((e) => e.isFavorite).toList();
   }
 }
 
@@ -113,6 +136,18 @@ class GratitudeNotifier extends StateNotifier<GratitudeState> {
     state = state.copyWith(
       entries: state.entries.where((e) => e.id != id).toList(),
     );
+    await _save();
+  }
+
+  /// Toggle the favorite status of an entry by its [id].
+  Future<void> toggleFavorite(String id) async {
+    final updated = state.entries.map((e) {
+      if (e.id == id) {
+        return e.copyWith(isFavorite: !e.isFavorite);
+      }
+      return e;
+    }).toList();
+    state = state.copyWith(entries: updated);
     await _save();
   }
 }
