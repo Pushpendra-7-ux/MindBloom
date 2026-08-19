@@ -816,136 +816,190 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _showGratitudeGarden() {
-    final allEntries = ref.read(gratitudeProvider).entries;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.65,
-          maxChildSize: 0.9,
-          minChildSize: 0.4,
-          builder: (_, controller) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+        bool showStarredOnly = false;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final allEntries = ref.watch(gratitudeProvider).entries;
+            final displayedEntries = showStarredOnly
+                ? allEntries.where((e) => e.isFavorite).toList()
+                : allEntries;
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.65,
+              maxChildSize: 0.9,
+              minChildSize: 0.4,
+              builder: (_, controller) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        const Text('🌻', style: TextStyle(fontSize: 22)),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Gratitude Garden',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        const Spacer(),
-                        Text(
-                          '${allEntries.length} total',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: allEntries.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.local_florist_rounded, size: 48, color: Colors.grey[300]),
-                                const SizedBox(height: 12),
-                                Text('No entries yet', style: Theme.of(context).textTheme.bodyMedium),
-                                const SizedBox(height: 4),
-                                Text('Start planting seeds of gratitude!', style: Theme.of(context).textTheme.bodySmall),
-                              ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            const Text('🌻', style: TextStyle(fontSize: 22)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Gratitude Garden',
+                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
-                          )
-                        : ListView.separated(
-                            controller: controller,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            itemCount: allEntries.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
-                            itemBuilder: (_, index) {
-                              final entry = allEntries[index];
-                              final dateStr =
-                                  '${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year}';
-                              final timeStr =
-                                  '${entry.createdAt.hour.toString().padLeft(2, '0')}:${entry.createdAt.minute.toString().padLeft(2, '0')}';
-                              return Dismissible(
-                                key: Key(entry.id),
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.only(right: 20),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.error.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12),
+                            const Spacer(),
+                            FilterChip(
+                              selected: showStarredOnly,
+                              label: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    showStarredOnly ? Icons.star_rounded : Icons.star_outline_rounded,
+                                    size: 16,
+                                    color: showStarredOnly ? Colors.amber : AppColors.textSecondary,
                                   ),
-                                  child: const Icon(Icons.delete_rounded, color: AppColors.error),
-                                ),
-                                onDismissed: (_) {
-                                  ref.read(gratitudeProvider.notifier).remove(entry.id);
-                                  Navigator.of(ctx).pop();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.warmAmber.withValues(alpha: 0.06),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: AppColors.warmAmber.withValues(alpha: 0.15),
+                                  const SizedBox(width: 4),
+                                  const Text('Starred'),
+                                ],
+                              ),
+                              onSelected: (selected) {
+                                setSheetState(() {
+                                  showStarredOnly = selected;
+                                });
+                              },
+                              selectedColor: Colors.amber.withValues(alpha: 0.2),
+                              checkmarkColor: Colors.amber[800],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: displayedEntries.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      showStarredOnly ? Icons.star_outline_rounded : Icons.local_florist_rounded,
+                                      size: 48,
+                                      color: Colors.grey[300],
                                     ),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('🌱', style: TextStyle(fontSize: 18)),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              entry.text,
-                                              style: Theme.of(context).textTheme.bodyLarge,
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              '$dateStr  •  $timeStr',
-                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                    color: AppColors.textSecondary,
-                                                  ),
-                                            ),
-                                          ],
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      showStarredOnly ? 'No starred entries yet' : 'No entries yet',
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      showStarredOnly
+                                          ? 'Tap the star icon on any entry to bookmark it'
+                                          : 'Start planting seeds of gratitude!',
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.separated(
+                                controller: controller,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                itemCount: displayedEntries.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                itemBuilder: (_, index) {
+                                  final entry = displayedEntries[index];
+                                  final dateStr =
+                                      '${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year}';
+                                  final timeStr =
+                                      '${entry.createdAt.hour.toString().padLeft(2, '0')}:${entry.createdAt.minute.toString().padLeft(2, '0')}';
+                                  return Dismissible(
+                                    key: Key(entry.id),
+                                    direction: DismissDirection.endToStart,
+                                    background: Container(
+                                      alignment: Alignment.centerRight,
+                                      padding: const EdgeInsets.only(right: 20),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.error.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(Icons.delete_rounded, color: AppColors.error),
+                                    ),
+                                    onDismissed: (_) {
+                                      ref.read(gratitudeProvider.notifier).remove(entry.id);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.warmAmber.withValues(alpha: 0.06),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: entry.isFavorite
+                                              ? Colors.amber.withValues(alpha: 0.5)
+                                              : AppColors.warmAmber.withValues(alpha: 0.15),
+                                          width: entry.isFavorite ? 1.5 : 1.0,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          const Text('🌱', style: TextStyle(fontSize: 18)),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  entry.text,
+                                                  style: Theme.of(context).textTheme.bodyLarge,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '$dateStr  •  $timeStr',
+                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                        color: AppColors.textSecondary,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(
+                                              entry.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                                              color: entry.isFavorite ? Colors.amber : AppColors.textSecondary,
+                                              size: 22,
+                                            ),
+                                            tooltip: entry.isFavorite ? 'Remove star' : 'Star entry',
+                                            onPressed: () {
+                                              ref.read(gratitudeProvider.notifier).toggleFavorite(entry.id);
+                                              setSheetState(() {});
+                                              HapticUtil.lightImpact();
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
