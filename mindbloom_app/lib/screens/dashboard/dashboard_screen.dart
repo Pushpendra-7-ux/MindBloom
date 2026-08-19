@@ -816,12 +816,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _showGratitudeGarden() {
+    bool showStarredOnly = false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        bool showStarredOnly = false;
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final allEntries = ref.watch(gratitudeProvider).entries;
@@ -863,27 +863,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   ),
                             ),
                             const Spacer(),
-                            FilterChip(
-                              selected: showStarredOnly,
-                              label: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    showStarredOnly ? Icons.star_rounded : Icons.star_outline_rounded,
-                                    size: 16,
-                                    color: showStarredOnly ? Colors.amber : AppColors.textSecondary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Text('Starred'),
-                                ],
-                              ),
-                              onSelected: (selected) {
+                            InkWell(
+                              onTap: () {
                                 setSheetState(() {
-                                  showStarredOnly = selected;
+                                  showStarredOnly = !showStarredOnly;
                                 });
+                                HapticUtil.lightImpact();
                               },
-                              selectedColor: Colors.amber.withValues(alpha: 0.2),
-                              checkmarkColor: Colors.amber[800],
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: showStarredOnly
+                                      ? Colors.amber.withValues(alpha: 0.2)
+                                      : Theme.of(context).cardTheme.color,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: showStarredOnly
+                                        ? Colors.amber
+                                        : Colors.grey.withValues(alpha: 0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      showStarredOnly ? Icons.star_rounded : Icons.star_outline_rounded,
+                                      size: 16,
+                                      color: showStarredOnly ? Colors.amber[800] : AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Starred',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: showStarredOnly ? FontWeight.bold : FontWeight.normal,
+                                        color: showStarredOnly ? Colors.amber[900] : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -891,28 +911,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       const Divider(height: 1),
                       Expanded(
                         child: displayedEntries.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      showStarredOnly ? Icons.star_outline_rounded : Icons.local_florist_rounded,
-                                      size: 48,
-                                      color: Colors.grey[300],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      showStarredOnly ? 'No starred entries yet' : 'No entries yet',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      showStarredOnly
-                                          ? 'Tap the star icon on any entry to bookmark it'
-                                          : 'Start planting seeds of gratitude!',
-                                      style: Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                  ],
+                            ? SingleChildScrollView(
+                                controller: controller,
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 40),
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        showStarredOnly ? Icons.star_outline_rounded : Icons.local_florist_rounded,
+                                        size: 48,
+                                        color: Colors.grey[300],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        showStarredOnly ? 'No starred entries yet' : 'No entries yet',
+                                        style: Theme.of(context).textTheme.bodyMedium,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        showStarredOnly
+                                            ? 'Tap the star icon on any entry to bookmark it'
+                                            : 'Start planting seeds of gratitude!',
+                                        style: Theme.of(context).textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               )
                             : ListView.separated(
