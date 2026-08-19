@@ -1038,7 +1038,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        avatar: const Icon(Icons.favorite_rounded, size: 16, color: AppColors.warmAmber),
+                        avatar: InkWell(
+                          onTap: () {
+                            ref.read(gratitudeProvider.notifier).toggleFavorite(entry.id);
+                            HapticUtil.lightImpact();
+                          },
+                          child: Icon(
+                            entry.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                            size: 16,
+                            color: entry.isFavorite ? Colors.amber : AppColors.warmAmber,
+                          ),
+                        ),
                         deleteIcon: const Icon(Icons.close_rounded, size: 16),
                         onDeleted: () {
                           ref.read(gratitudeProvider.notifier).remove(entry.id);
