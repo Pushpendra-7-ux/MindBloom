@@ -113,6 +113,7 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
     }
 
     final tracker = _tracker!;
+    final customHabitsState = ref.watch(customHabitsProvider);
     final progress = tracker.habitProgress;
 
     return Scaffold(
@@ -224,12 +225,76 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
                           shape: BoxShape.circle,
                           color: entry.value ? info['color'] as Color : Colors.transparent,
                           border: Border.all(
-                            color: entry.value ? info['color'] as Color : Colors.black.withValues(alpha: 0.2),
+                            color: entry.value ? info['color'] as Color : Colors.grey[400]!,
                             width: 2,
                           ),
                         ),
                         child: entry.value
-                            ? const Icon(Icons.check, color: Colors.white, size: 16)
+                            ? const Icon(Icons.check, size: 18, color: Colors.white)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            ...customHabitsState.habits.map((customItem) {
+              final isCompleted = tracker.habits[customItem.id] ?? false;
+              const color = AppColors.primaryPurple;
+              return GestureDetector(
+                onTap: () => _toggleHabit(customItem.id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? color.withValues(alpha: 0.1)
+                        : Theme.of(context).cardTheme.color,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isCompleted ? color : Colors.black.withValues(alpha: 0.08),
+                      width: isCompleted ? 1.5 : 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(customItem.icon, style: const TextStyle(fontSize: 24)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          customItem.label,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: isCompleted ? FontWeight.w600 : FontWeight.w400,
+                              ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.coral),
+                        tooltip: 'Delete custom habit',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          ref
+                              .read(customHabitsProvider.notifier)
+                              .removeCustomHabit(customItem.id);
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted ? color : Colors.transparent,
+                          border: Border.all(
+                            color: isCompleted ? color : Colors.grey[400]!,
+                            width: 2,
+                          ),
+                        ),
+                        child: isCompleted
+                            ? const Icon(Icons.check, size: 18, color: Colors.white)
                             : null,
                       ),
                     ],
