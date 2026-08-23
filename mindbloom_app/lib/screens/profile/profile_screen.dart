@@ -362,6 +362,39 @@ class ProfileScreen extends ConsumerWidget {
                     activeTrackColor: AppColors.primaryPurple,
                     onChanged: (_) => notifier.toggleBreathingReminders(),
                   ),
+                  const Divider(height: 1),
+
+                  // Preferred Check-in Time Picker
+                  ListTile(
+                    leading: const Text('⏰', style: TextStyle(fontSize: 20)),
+                    title: const Text('Preferred Check-in Time'),
+                    subtitle: const Text('Time to receive daily check-in prompt'),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryPurple.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        reminderState.preferredCheckinTime,
+                        style: const TextStyle(
+                          color: AppColors.primaryPurple,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    onTap: () async {
+                      final now = TimeOfDay.now();
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: now,
+                      );
+                      if (picked != null && context.mounted) {
+                        final formatted = picked.format(context);
+                        notifier.setPreferredCheckinTime(formatted);
+                      }
+                    },
+                  ),
                   const SizedBox(height: 20),
                 ],
               ),
