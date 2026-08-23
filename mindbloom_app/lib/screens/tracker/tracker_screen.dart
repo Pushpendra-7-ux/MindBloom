@@ -43,16 +43,20 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
 
   Future<void> _loadTracker() async {
     try {
-      final response = await ApiService().getTodayTracker();
-      setState(() {
-        _tracker = TrackerModel.fromJson(response.data['tracker']);
-        _isLoading = false;
-      });
+      final response = await ApiService().getTodayTracker().timeout(const Duration(seconds: 2));
+      if (mounted) {
+        setState(() {
+          _tracker = TrackerModel.fromJson(response.data['tracker']);
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _tracker = TrackerModel(date: DateTime.now());
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _tracker = TrackerModel(date: DateTime.now());
+          _isLoading = false;
+        });
+      }
     }
   }
 
