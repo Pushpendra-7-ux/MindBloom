@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
 import '../../models/tracker_model.dart';
+import '../../providers/custom_habits_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/custom_card.dart';
 
@@ -166,8 +167,21 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Habits
-            Text('Daily Habits', style: Theme.of(context).textTheme.headlineSmall),
+            // Habits Header with Add Custom button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Daily Habits', style: Theme.of(context).textTheme.headlineSmall),
+                TextButton.icon(
+                  onPressed: _showAddCustomHabitDialog,
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Add Custom'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primaryPurple,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             ...tracker.habits.entries.map((entry) {
               final info = _habitInfo[entry.key];
@@ -344,6 +358,112 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showAddCustomHabitDialog() {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    String selectedEmoji = '🧘';
+    final emojis = ['🧘', '🏃', '🎯', '🌱', '✨', '🎨', '💪', '🍎'];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  const Text('⭐', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 8),
+                  Text('New Custom Habit', style: Theme.of(context).textTheme.titleLarge),
+                ],
+              ),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Habit Name', style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      key: const Key('custom_habit_label_field'),
+                      controller: controller,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Morning Stretch',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a habit name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Choose Icon', style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: emojis.map((emoji) {
+                        final isSelected = selectedEmoji == emoji;
+                        return GestureDetector(
+                          onTap: () {
+                            setDialogState(() {
+                              selectedEmoji = emoji;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primaryPurple.withValues(alpha: 0.15)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primaryPurple : Colors.grey.withValues(alpha: 0.3),
+                                width: isSelected ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      ref
+                          .read(customHabitsProvider.notifier)
+                          .addCustomHabit(controller.text.trim(), selectedEmoji);
+                      Navigator.pop(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryPurple,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('Add Habit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
