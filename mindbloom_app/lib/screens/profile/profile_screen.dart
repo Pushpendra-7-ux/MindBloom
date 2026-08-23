@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/reminder_settings_provider.dart';
 import '../../widgets/custom_card.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -107,7 +108,7 @@ class ProfileScreen extends ConsumerWidget {
 
             // Menu items
             _menuItem(context, Icons.favorite_rounded, 'Saved Quotes', () => _showSavedQuotes(context)),
-            _menuItem(context, Icons.notifications_outlined, 'Notifications', () {}),
+            _menuItem(context, Icons.notifications_outlined, 'Notifications', () => _showNotificationSettingsSheet(context, ref)),
             _menuItem(context, Icons.security_outlined, 'Privacy & Security', () {}),
             _menuItem(context, Icons.help_outline_rounded, 'Help & Support', () {}),
             _menuItem(context, Icons.info_outline_rounded, 'About MindBloom', () {}),
@@ -273,6 +274,101 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showNotificationSettingsSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final reminderState = ref.watch(reminderSettingsProvider);
+            final notifier = ref.read(reminderSettingsProvider.notifier);
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text('🔔', style: TextStyle(fontSize: 22)),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Daily Reminders Settings',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Configure gentle reminders to keep your wellness routine on track.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(height: 1),
+                  const SizedBox(height: 12),
+
+                  // Water Reminders Switch
+                  SwitchListTile(
+                    secondary: const Text('💧', style: TextStyle(fontSize: 20)),
+                    title: const Text('Hydration Reminders'),
+                    subtitle: const Text('Gentle nudges to stay hydrated'),
+                    value: reminderState.waterRemindersEnabled,
+                    activeTrackColor: AppColors.primaryPurple,
+                    onChanged: (_) => notifier.toggleWaterReminders(),
+                  ),
+                  const Divider(height: 1),
+
+                  // Mood Checkin Reminders Switch
+                  SwitchListTile(
+                    secondary: const Text('📊', style: TextStyle(fontSize: 20)),
+                    title: const Text('Mood Check-in Reminders'),
+                    subtitle: const Text('Daily prompt to log your mood'),
+                    value: reminderState.checkinRemindersEnabled,
+                    activeTrackColor: AppColors.primaryPurple,
+                    onChanged: (_) => notifier.toggleCheckinReminders(),
+                  ),
+                  const Divider(height: 1),
+
+                  // Breathing Reminders Switch
+                  SwitchListTile(
+                    secondary: const Text('🧘', style: TextStyle(fontSize: 20)),
+                    title: const Text('Breathing Exercise Reminders'),
+                    subtitle: const Text('Reminders for daily mindful breathing'),
+                    value: reminderState.breathingRemindersEnabled,
+                    activeTrackColor: AppColors.primaryPurple,
+                    onChanged: (_) => notifier.toggleBreathingReminders(),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
