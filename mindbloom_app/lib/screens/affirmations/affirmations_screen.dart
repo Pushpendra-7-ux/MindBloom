@@ -101,7 +101,6 @@ class _AffirmationsScreenState extends ConsumerState<AffirmationsScreen>
     final current = affState.current;
     final category = current['category'] ?? '';
     final text = current['text'] ?? '';
-    final isFav = affState.isFavorited;
 
     return Scaffold(
       appBar: AppBar(
@@ -130,99 +129,119 @@ class _AffirmationsScreenState extends ConsumerState<AffirmationsScreen>
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    _buildFilterChip(context, 'All', null, affState.activeCategory),
+                    _buildFilterChip(context, 'All', null, affState),
+                    _buildFavoritesFilterChip(context, affState),
                     ...DailyAffirmations.categories.map((cat) =>
-                        _buildFilterChip(context, cat, cat, affState.activeCategory)),
+                        _buildFilterChip(context, cat, cat, affState)),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Main affirmation card
-              FadeTransition(
-                opacity: _fadeAnim,
-                child: SlideTransition(
-                  position: _slideAnim,
-                  child: CustomCard(
-                    gradient: LinearGradient(
-                      colors: [
-                        _categoryColor(category),
-                        _categoryColor(category).withValues(alpha: 0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    padding: const EdgeInsets.all(28),
-                    child: Column(
-                      children: [
-                        Icon(
-                          _categoryIcon(category),
-                          size: 44,
-                          color: Colors.white.withValues(alpha: 0.85),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          text,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                height: 1.5,
-                              ),
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(20),
+              // Main affirmation card or Empty state
+              if (affState.showFavoritesOnly && affState.affirmations.isEmpty)
+                CustomCard(
+                  padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                  child: Column(
+                    children: [
+                      Icon(Icons.star_outline_rounded, size: 54, color: Colors.amber[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No Favorited Affirmations Yet',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap the heart icon on any affirmation to save it to your favorites.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                FadeTransition(
+                  opacity: _fadeAnim,
+                  child: SlideTransition(
+                    position: _slideAnim,
+                    child: CustomCard(
+                      gradient: LinearGradient(
+                        colors: [
+                          _categoryColor(category),
+                          _categoryColor(category).withValues(alpha: 0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      padding: const EdgeInsets.all(28),
+                      child: Column(
+                        children: [
+                          Icon(
+                            _categoryIcon(category),
+                            size: 44,
+                            color: Colors.white.withValues(alpha: 0.85),
                           ),
-                          child: Text(
-                            category,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 13,
+                          const SizedBox(height: 20),
+                          Text(
+                            text,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.5,
+                                ),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              category,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Navigation & actions row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildActionButton(
-                    Icons.arrow_back_ios_rounded,
-                    'Previous',
-                    () => _animateTransition(() => notifier.previous()),
-                  ),
-                  _buildActionButton(
-                    isFav ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                    isFav ? 'Saved' : 'Save',
-                    () {
-                      notifier.toggleFavorite();
-                      HapticUtil.mediumImpact();
-                    },
-                    highlight: isFav,
-                  ),
-                  _buildActionButton(
-                    Icons.share_rounded,
-                    'Share',
-                    () => _shareAffirmation(text, category),
-                  ),
-                  _buildActionButton(
-                    Icons.arrow_forward_ios_rounded,
-                    'Next',
-                    () => _animateTransition(() => notifier.next()),
-                  ),
-                ],
-              ),
+                // Navigation & actions row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildActionButton(
+                      Icons.arrow_back_rounded,
+                      'Previous',
+                      () => _animateTransition(notifier.previous),
+                    ),
+                    _buildActionButton(
+                      affState.isFavorited ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      'Favorite',
+                      notifier.toggleFavorite,
+                      highlight: affState.isFavorited,
+                    ),
+                    _buildActionButton(
+                      Icons.share_rounded,
+                      'Share',
+                      () => _shareAffirmation(text, category),
+                    ),
+                    _buildActionButton(
+                      Icons.arrow_forward_rounded,
+                      'Next',
+                      () => _animateTransition(notifier.next),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 20),
 
               // Counter
@@ -258,8 +277,9 @@ class _AffirmationsScreenState extends ConsumerState<AffirmationsScreen>
   }
 
   Widget _buildFilterChip(
-      BuildContext context, String label, String? category, String? active) {
-    final isActive = category == active || (category == null && active == null);
+      BuildContext context, String label, String? category, AffirmationState affState) {
+    final isActive = !affState.showFavoritesOnly &&
+        (category == affState.activeCategory || (category == null && affState.activeCategory == null));
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
@@ -274,6 +294,39 @@ class _AffirmationsScreenState extends ConsumerState<AffirmationsScreen>
         checkmarkColor: AppColors.primaryPurple,
         labelStyle: TextStyle(
           color: isActive ? AppColors.primaryPurple : null,
+          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFavoritesFilterChip(BuildContext context, AffirmationState affState) {
+    final isActive = affState.showFavoritesOnly;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? Icons.star_rounded : Icons.star_outline_rounded,
+              size: 16,
+              color: isActive ? Colors.amber[800] : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 4),
+            const Text('Favorites'),
+          ],
+        ),
+        selected: isActive,
+        onSelected: (_) {
+          ref.read(affirmationProvider.notifier).filterFavorites();
+          _animController.forward(from: 0);
+          HapticUtil.lightImpact();
+        },
+        selectedColor: Colors.amber.withValues(alpha: 0.2),
+        checkmarkColor: Colors.amber[800],
+        labelStyle: TextStyle(
+          color: isActive ? Colors.amber[900] : null,
           fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
