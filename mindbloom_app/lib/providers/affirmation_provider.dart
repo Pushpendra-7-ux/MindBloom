@@ -9,12 +9,14 @@ class AffirmationState {
   final int currentIndex;
   final String? activeCategory;
   final Set<int> favoriteIndices;
+  final bool showFavoritesOnly;
 
   const AffirmationState({
     this.affirmations = const [],
     this.currentIndex = 0,
     this.activeCategory,
     this.favoriteIndices = const {},
+    this.showFavoritesOnly = false,
   });
 
   Map<String, String> get current =>
@@ -27,6 +29,7 @@ class AffirmationState {
     int? currentIndex,
     String? activeCategory,
     Set<int>? favoriteIndices,
+    bool? showFavoritesOnly,
     bool clearCategory = false,
   }) {
     return AffirmationState(
@@ -34,6 +37,7 @@ class AffirmationState {
       currentIndex: currentIndex ?? this.currentIndex,
       activeCategory: clearCategory ? null : (activeCategory ?? this.activeCategory),
       favoriteIndices: favoriteIndices ?? this.favoriteIndices,
+      showFavoritesOnly: showFavoritesOnly ?? this.showFavoritesOnly,
     );
   }
 }
@@ -100,14 +104,27 @@ class AffirmationNotifier extends StateNotifier<AffirmationState> {
         affirmations: _allAffirmations,
         currentIndex: 0,
         favoriteIndices: state.favoriteIndices,
+        showFavoritesOnly: false,
       );
     } else {
       state = state.copyWith(
         affirmations: _allAffirmations.where((a) => a['category'] == category).toList(),
         currentIndex: 0,
         activeCategory: category,
+        showFavoritesOnly: false,
       );
     }
+  }
+
+  /// Filter to show only favorited affirmations.
+  void filterFavorites() {
+    final favList = getFavorites();
+    state = AffirmationState(
+      affirmations: favList,
+      currentIndex: 0,
+      favoriteIndices: state.favoriteIndices,
+      showFavoritesOnly: true,
+    );
   }
 
   /// Toggle favorite status for the current affirmation.
