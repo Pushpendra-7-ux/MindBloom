@@ -13,6 +13,7 @@ import '../../providers/water_provider.dart';
 import '../../providers/gratitude_provider.dart';
 import '../../providers/notes_provider.dart';
 import '../../providers/tips_provider.dart';
+import '../../providers/badges_provider.dart';
 import '../../config/wellness_tips.dart';
 import 'package:intl/intl.dart';
 import '../../services/haptic_util.dart';
@@ -403,6 +404,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 const SizedBox(height: 20),
 
+                // Wellness Milestones preview card
+                _buildBadgesPreviewCard(context, ref),
+                const SizedBox(height: 20),
+
                 // Wellness cards grid
                 Text('Wellness Activities', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 12),
@@ -576,6 +581,85 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBadgesPreviewCard(BuildContext context, WidgetRef ref) {
+    final badgesState = ref.watch(badgesProvider);
+    final totalUnlocked = badgesState.totalUnlocked;
+    final totalBadges = badgesState.badges.length;
+
+    return CustomCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Text('🏆', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Wellness Milestones',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryPurple.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$totalUnlocked / $totalBadges',
+                  style: const TextStyle(
+                    color: AppColors.primaryPurple,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: badgesState.badges.take(4).map((badge) {
+              return Opacity(
+                opacity: badge.isUnlocked ? 1.0 : 0.4,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: badge.isUnlocked
+                            ? AppColors.primaryPurple.withValues(alpha: 0.1)
+                            : Colors.grey.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(badge.icon, style: const TextStyle(fontSize: 24)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      badge.title,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            fontWeight: badge.isUnlocked ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
