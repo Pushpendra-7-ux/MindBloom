@@ -14,6 +14,7 @@ import '../../providers/gratitude_provider.dart';
 import '../../providers/notes_provider.dart';
 import '../../providers/tips_provider.dart';
 import '../../providers/badges_provider.dart';
+import '../../models/badge_model.dart';
 import '../../config/wellness_tips.dart';
 import 'package:intl/intl.dart';
 import '../../services/haptic_util.dart';
@@ -40,6 +41,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ref.read(moodProvider.notifier).fetchLatestMood();
       ref.read(moodProvider.notifier).fetchWeeklyData();
       _checkIfQuoteFavorited();
+      _evaluateMilestonesAndCelebrate();
     });
   }
 
@@ -58,7 +60,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.read(gratitudeProvider.notifier).add(text);
     _gratitudeController.clear();
     // Haptic feedback
-    HapticUtil.mediumImpact();
+    HapticUtil.lightImpact();
+    _evaluateMilestonesAndCelebrate();
     // Celebration UI
     _celebrateGratitude();
   }
@@ -311,6 +314,89 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               },
             );
           },
+        );
+      },
+    );
+  }
+
+  Future<void> _evaluateMilestonesAndCelebrate() async {
+    final user = ref.read(authStateProvider).user;
+    final moodCount = ref.read(moodProvider).history.length;
+    final gratitudeCount = ref.read(gratitudeProvider).entries.length;
+    final waterCups = ref.read(waterProvider).cups;
+
+    final newlyUnlockedIds = await ref.read(badgesProvider.notifier).evaluateMilestones(
+      streak: user?.streak.current ?? 0,
+      moodLogs: moodCount,
+      gratitudeLogs: gratitudeCount,
+      waterCups: waterCups,
+    );
+
+    if (newlyUnlockedIds.isNotEmpty && mounted) {
+      final badges = ref.read(badgesProvider).badges;
+      final unlockedBadge = badges.firstWhere(
+        (b) => b.id == newlyUnlockedIds.first,
+        orElse: () => badges.first,
+      );
+      _showBadgeUnlockDialog(unlockedBadge);
+    }
+  }
+
+  void _showBadgeUnlockDialog(MindbloomBadge badge) {
+    HapticUtil.heavyImpact();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('🎉', style: TextStyle(fontSize: 48)),
+              const SizedBox(height: 12),
+              Text(
+                'Milestone Unlocked!',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryPurple,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryPurple.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(badge.icon, style: const TextStyle(fontSize: 40)),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                badge.title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                badge.description,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Awesome!'),
+              ),
+            ],
+          ),
         );
       },
     );
