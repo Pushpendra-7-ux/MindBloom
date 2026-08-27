@@ -131,6 +131,57 @@ class BadgesNotifier extends StateNotifier<BadgesState> {
     state = state.copyWith(badges: updated);
     await _save();
   }
+
+  /// Evaluates progress metrics and unlocks eligible badges.
+  /// Returns list of newly unlocked badge IDs for UI celebration triggers.
+  Future<List<String>> evaluateMilestones({
+    int streak = 0,
+    int moodLogs = 0,
+    int gratitudeLogs = 0,
+    int waterCups = 0,
+    int customHabits = 0,
+  }) async {
+    final newlyUnlocked = <String>[];
+    final now = DateTime.now();
+
+    final updated = state.badges.map((b) {
+      if (b.isUnlocked) return b;
+
+      bool shouldUnlock = false;
+      switch (b.id) {
+        case 'streak_3':
+          shouldUnlock = streak >= 3;
+          break;
+        case 'streak_7':
+          shouldUnlock = streak >= 7;
+          break;
+        case 'mood_5':
+          shouldUnlock = moodLogs >= 5;
+          break;
+        case 'gratitude_3':
+          shouldUnlock = gratitudeLogs >= 3;
+          break;
+        case 'water_4':
+          shouldUnlock = waterCups >= 4;
+          break;
+        case 'custom_habit_1':
+          shouldUnlock = customHabits >= 1;
+          break;
+      }
+
+      if (shouldUnlock) {
+        newlyUnlocked.add(b.id);
+        return b.copyWith(isUnlocked: true, unlockedAt: now);
+      }
+      return b;
+    }).toList();
+
+    if (newlyUnlocked.isNotEmpty) {
+      state = state.copyWith(badges: updated);
+      await _save();
+    }
+    return newlyUnlocked;
+  }
 }
 
 final badgesProvider = StateNotifierProvider<BadgesNotifier, BadgesState>((ref) {
