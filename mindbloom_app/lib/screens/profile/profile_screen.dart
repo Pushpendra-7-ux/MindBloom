@@ -6,6 +6,7 @@ import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/reminder_settings_provider.dart';
+import '../../providers/badges_provider.dart';
 import '../../widgets/custom_card.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -107,6 +108,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 10),
 
             // Menu items
+            _menuItem(context, Icons.military_tech_rounded, 'Wellness Milestones', () => _showBadgesShowcaseSheet(context, ref)),
             _menuItem(context, Icons.favorite_rounded, 'Saved Quotes', () => _showSavedQuotes(context)),
             _menuItem(context, Icons.notifications_outlined, 'Notifications', () => _showNotificationSettingsSheet(context, ref)),
             _menuItem(context, Icons.security_outlined, 'Privacy & Security', () {}),
@@ -396,6 +398,145 @@ class ProfileScreen extends ConsumerWidget {
                     },
                   ),
                   const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showBadgesShowcaseSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final badgesState = ref.watch(badgesProvider);
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('🏆', style: TextStyle(fontSize: 24)),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Wellness Milestones',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryPurple.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          '${badgesState.totalUnlocked} / ${badgesState.badges.length} Unlocked',
+                          style: const TextStyle(
+                            color: AppColors.primaryPurple,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Earn achievement badges as you build healthy daily wellness habits.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 16),
+
+                  Expanded(
+                    child: GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 1.1,
+                      ),
+                      itemCount: badgesState.badges.length,
+                      itemBuilder: (context, index) {
+                        final badge = badgesState.badges[index];
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: badge.isUnlocked
+                                ? AppColors.primaryPurple.withValues(alpha: 0.08)
+                                : Theme.of(context).cardTheme.color,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: badge.isUnlocked
+                                  ? AppColors.primaryPurple.withValues(alpha: 0.4)
+                                  : Colors.black.withValues(alpha: 0.08),
+                              width: badge.isUnlocked ? 1.5 : 0.5,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Opacity(
+                                opacity: badge.isUnlocked ? 1.0 : 0.35,
+                                child: Text(badge.icon, style: const TextStyle(fontSize: 32)),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                badge.title,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      fontWeight: badge.isUnlocked ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                badge.description,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontSize: 10,
+                                      color: AppColors.textSecondary,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ),
             );
