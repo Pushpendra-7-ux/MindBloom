@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../config/theme.dart';
 import '../../providers/mood_provider.dart';
 import '../../widgets/custom_card.dart';
+import '../../widgets/mood_analytics_card.dart';
 
 class MoodHistoryScreen extends ConsumerStatefulWidget {
   const MoodHistoryScreen({super.key});
@@ -16,6 +17,7 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedFilter = 'all'; // 'all', 'positive', 'neutral', 'negative'
+  int _analyticsDays = 30;
   final Set<int> _expandedJournals = {};
 
   @override
@@ -33,6 +35,7 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final moodState = ref.watch(moodProvider);
+    final analytics = ref.read(moodProvider.notifier).calculateAnalytics(days: _analyticsDays);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mood History')),
@@ -53,9 +56,19 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
                 )
               : Column(
                   children: [
+                    // Mood Analytics Summary Card
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: MoodAnalyticsCard(
+                        analytics: analytics,
+                        onPeriodChanged: (days) {
+                          setState(() => _analyticsDays = days);
+                        },
+                      ),
+                    ),
                     // Search bar
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
