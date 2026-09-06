@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/mood_model.dart';
+import '../models/mood_analytics_model.dart';
 import '../services/api_service.dart';
 
 class MoodState {
@@ -78,8 +79,89 @@ class MoodNotifier extends StateNotifier<MoodState> {
       state = state.copyWith(weeklyData: data);
     } catch (_) {}
   }
+
+  MoodAnalytics calculateAnalytics({int days = 30}) {
+    final now = DateTime.now();
+    final filteredLogs = state.history.where((log) {
+      if (days <= 0 || log.createdAt == null) return true;
+      final diff = now.difference(log.createdAt!).inDays;
+      return diff <= days;
+    }).toList();
+
+    if (filteredLogs.isEmpty) {
+      return MoodAnalytics(
+        totalLogs: 0,
+        averageScore: 0.0,
+        positiveCount: 0,
+        neutralCount: 0,
+        negativeCount: 0,
+        streakDays: 0,
+        topFeelings: {},
+        filterDays: days,
+      );
+    }
+
+    double totalScore = 0;
+    int pos = 0;
+    int neu = 0;
+    int neg = 0;
+    final Map<String, int> feelingCounts = {};
+
+    for (final log in filteredLogs) {
+      totalScore += log.moodScore;
+      if (log.moodScore >= 8) {
+        pos++;
+      } else if (log.moodScore >= 4) {
+        neu++;
+      } else {
+        neg++;
+      }
+
+      for (final feeling in log.feelings) {
+        feelingCounts[feeling] = (feelingCounts[feeling] ?? 0) + 1;
+      }
+    }
+
+    final sortedFeelingsList = feelingCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final Map<String, int> topFeelings = {};
+    for (final entry in sortedFeelingsList.take(5)) {
+      topFeelings[entry.key] = entry.value;
+    }
+
+    final dates = state.history
+        .where((l) => l.createdAt != null)
+        .map((l) => DateTime(l.createdAt!.year, l.createdAt!.month, l.createdAt!.day))
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    int streak = 0;
+    if (dates.isNotEmpty) {
+      DateTime checkDate = DateTime(now.year, now.month, now.day);
+      if (!dates.contains(checkDate)) {
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      }
+      while (dates.contains(checkDate)) {
+        streak++;
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      }
+    }
+
+    return MoodAnalytics(
+      totalLogs: filteredLogs.length,
+      averageScore: double.parse((totalScore / filteredLogs.length).toStringAsFixed(1)),
+      positiveCount: pos,
+      neutralCount: neu,
+      negativeCount: neg,
+      streakDays: streak,
+      topFeelings: topFeelings,
+      filterDays: days,
+    );
+  }
 }
 
 final moodProvider = StateNotifierProvider<MoodNotifier, MoodState>((ref) {
   return MoodNotifier();
 });
+
