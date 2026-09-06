@@ -6,11 +6,13 @@ import 'custom_card.dart';
 class MoodAnalyticsCard extends StatelessWidget {
   final MoodAnalytics analytics;
   final Function(int days) onPeriodChanged;
+  final Function(String feeling)? onFeelingSelected;
 
   const MoodAnalyticsCard({
     super.key,
     required this.analytics,
     required this.onPeriodChanged,
+    this.onFeelingSelected,
   });
 
   @override
@@ -165,18 +167,21 @@ class MoodAnalyticsCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: analytics.topFeelings.entries.map((entry) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryPurple.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${entry.key} (${entry.value})',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.primaryPurple,
-                        fontWeight: FontWeight.w500,
+                  return GestureDetector(
+                    onTap: () => onFeelingSelected?.call(entry.key),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryPurple.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${entry.key} (${entry.value})',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.primaryPurple,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   );

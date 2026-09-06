@@ -64,6 +64,12 @@ class _MoodHistoryScreenState extends ConsumerState<MoodHistoryScreen> {
                         onPeriodChanged: (days) {
                           setState(() => _analyticsDays = days);
                         },
+                        onFeelingSelected: (feeling) {
+                          setState(() {
+                            _searchController.text = feeling;
+                            _searchQuery = feeling.toLowerCase();
+                          });
+                        },
                       ),
                     ),
                     // Search bar
