@@ -128,7 +128,7 @@ void main() {
     expect(find.textContaining('Felt quite overwhelmed'), findsNothing);
 
     // Tap "All" to reset filter
-    final allFilter = find.text('All');
+    final allFilter = find.text('All').last;
     expect(allFilter, findsOneWidget);
     await tester.tap(allFilter);
     await tester.pumpAndSettle();
